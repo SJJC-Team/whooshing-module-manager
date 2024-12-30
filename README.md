@@ -16,13 +16,36 @@
 
 ## **部署说明**
 
-暂不确定
+- **开发工具**：
+
+  - **数据库**：PostgreSQL 17.2
+
+  - **后端开发以及 API**：Vapor(Swift)
+  - **密钥存储和管理**：[Google KMS](https://cloud.google.com/kms/docs/?hl=zh_CN&_gl=1*lh8okm*_ga*MTAzMjA5NjAzMS4xNzI3MjQzMTUx*_ga_WH2QY8WWF5*MTczNTU3NTIzOS4yMjcuMS4xNzM1NTc1MzA1LjU0LjAuMA..)
 
 
 
 ## **设计图**
 
-暂无
+### 模块间通信加密机制
+
+![](diagrams/1.模块间通信加密机制.png)
+
+
+
+### 用户数据加密机制
+
+![](diagrams/2.用户数据加密机制.png)
+
+
+
+### 数据库加密
+
+使用 PostgreSQL TDE 技术，用数据库 AES 密钥对其进行字段级加密，该密钥保存在 Google KMS 中以获得最佳安全性。
+
+
+
+另见，[其他设计图](diagrams)
 
 
 
