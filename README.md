@@ -22,6 +22,7 @@
 
   - **后端开发以及 API**：Vapor(Swift)
   - **密钥存储和管理**：[Google KMS](https://cloud.google.com/kms/docs/?hl=zh_CN&_gl=1*lh8okm*_ga*MTAzMjA5NjAzMS4xNzI3MjQzMTUx*_ga_WH2QY8WWF5*MTczNTU3NTIzOS4yMjcuMS4xNzM1NTc1MzA1LjU0LjAuMA..)
+  - **数据库加密**：[Perconna PostgreSQL pg_tde](https://github.com/percona/pg_tde)
 
 
 
@@ -29,13 +30,13 @@
 
 ### 模块间通信加密机制
 
-![](diagrams/1.模块间通信加密机制.png)
+![](diagrams/1.0.模块间通信加密机制.png)
 
 
 
 ### 用户数据加密机制
 
-![](diagrams/2.用户数据加密机制.png)
+![](diagrams/3.用户数据加密机制.png)
 
 
 
