@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # 安装 expect
 echo -e "${b}检查 expect 是否已安装...${n}"
 if ! command -v expect &> /dev/null; then
