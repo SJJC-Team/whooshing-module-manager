@@ -21,13 +21,15 @@
   - **数据库**：PostgreSQL 17.2
 
   - **后端开发以及 API**：Vapor(Swift)
-  - **密钥存储和管理**：[Google KMS](https://cloud.google.com/kms/docs/?hl=zh_CN&_gl=1*lh8okm*_ga*MTAzMjA5NjAzMS4xNzI3MjQzMTUx*_ga_WH2QY8WWF5*MTczNTU3NTIzOS4yMjcuMS4xNzM1NTc1MzA1LjU0LjAuMA..)
+  - **密钥存储和管理**：[Vault](https://developer.hashicorp.com/vault)
   - **数据库加密**：[Perconna PostgreSQL pg_tde](https://github.com/percona/pg_tde)
 
 初始化部署环境:
 
 ```shell
-wget https://raw.githubusercontent.com/SJJC-Team/whooshing-module-manager/refs/heads/develop/env_init/init.sh; sudo chmod +x init.sh; sudo ./init.sh
+wget https://raw.githubusercontent.com/SJJC-Team/whooshing-module-manager/refs/heads/develop/env_init/init.sh
+sudo chmod +x init.sh
+sudo ./init.sh
 ```
 
 ## **设计图**
