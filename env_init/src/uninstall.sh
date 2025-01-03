@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # 卸载 vapor
 echo -e "${b}卸载 vapor(若已安装)...${n}"
 sudo "$(dirname "$0")/uninstall_vapor.sh"
