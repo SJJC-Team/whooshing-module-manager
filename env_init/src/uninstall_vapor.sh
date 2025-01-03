@@ -11,13 +11,9 @@ echo -e "${b}------------------- Vapor 卸载 -------------------${n}"
 
 # 卸载 Vapor
 echo -e "${b}正在卸载 Vapor...${n}"
-if command -v vapor &> /dev/null; then
-    sudo rm -f /usr/local/bin/vapor
-    sudo rm -rf /root/configs/toolbox
-    echo -e "${g}Vapor 卸载成功${n}"
-else
-    echo -e "${g}Vapor 未安装${n}"
-fi
+sudo rm -f /usr/local/bin/vapor
+sudo rm -rf /root/configs/toolbox
+echo -e "${g}Vapor 卸载成功${n}"
 
 # 卸载 Swiftly
 echo -e "${b}正在卸载 Swiftly...${n}"
