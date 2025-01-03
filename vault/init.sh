@@ -36,7 +36,7 @@ EOF
 fi
 
 
-sudo cp vault.hcl /etc/vault.d/vault.hcl
+sudo cp "$(dirname "$0")/vault.hcl" /etc/vault.d/vault.hcl
 echo -e "${g}Vault 配置文件已复制${n}"
 
 # 启动服务
