@@ -9,11 +9,6 @@ if ! command -v expect &> /dev/null; then
     echo -e "${g}expect 安装成功${n}"
 else echo -e "${g}expect 已安装${n}"; fi
 
-# 授权 src 文件夹中的所有 sh 文件
-echo -e "${b}正在授权 src 文件夹中的所有 sh 文件...${n}"
-find "$(dirname "$0")" -type f -name "*.sh" -exec chmod +x {} \;
-echo -e "${g}授权完成${n}"
-
 # 安装 nvm
 echo -e "${b}检查 nvm 是否已安装...${n}"
 if command -v nvm &> /dev/null; then
