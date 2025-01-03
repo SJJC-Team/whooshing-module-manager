@@ -26,10 +26,16 @@ else read -p "从头安装?(y/n): " ans; fi
 if [[ $ans = y ]]; then
     echo -e "${b}安装 vault:${n}"
     curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-    sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-    sudo apt-get update && sudo apt-get install vault
+    expect << EOF
+spawn sudo apt-add-repository "deb \[arch=amd64\] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+expect " to continue or Ctrl-c to cancel" { send "\r" }
+expect eof
+EOF
+    sudo apt-get update && sudo apt-get install vault -y
     echo -e "${g}Vault 安装完成${n}"
 fi
+
+
 sudo cp vault.hcl /etc/vault.d/vault.hcl
 echo -e "${g}Vault 配置文件已复制${n}"
 

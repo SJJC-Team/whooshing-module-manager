@@ -13,7 +13,11 @@ echo -e "${b}------------------- Vault 卸载 -------------------${n}"
 
 echo -e "${b}正在卸载 Vault...${n}"
 sudo systemctl stop vault
-sudo apt-get remove --purge vault
+expect << EOF
+spawn sudo apt-get remove --purge vault
+expect "Do you want to continue?" { send "Y\r" }
+expect eof
+EOF
 sudo rm -rf /etc/vault.d
 if [[ $noenter = true ]]; then ans=y
 else echo -e -n "${r}删除 Vault 的数据？(y/n): ${n}"; read -p "" ans; fi
