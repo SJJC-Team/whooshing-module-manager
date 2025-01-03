@@ -10,6 +10,7 @@ n='\033[0m'
 echo -e "${b}------------------- Pm2 卸载 -------------------${n}"
 
 if command -v nvm > /dev/null 2>&1; then
+    . nvm install 23
     . nvm use 23
     echo -e "${b}删除 pm2 工具${n}"
     npm uninstall pm2 -g
