@@ -27,7 +27,7 @@
 初始化部署环境:
 
 ```shell
-wget https://raw.githubusercontent.com/SJJC-Team/whooshing-module-manager/refs/heads/develop/env_init/init.sh | sudo chmod +x init.sh | sudo ./init.sh
+wget https://raw.githubusercontent.com/SJJC-Team/whooshing-module-manager/refs/heads/develop/env_init/init.sh; sudo chmod +x init.sh; sudo ./init.sh
 ```
 
 ## **设计图**
