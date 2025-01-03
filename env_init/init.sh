@@ -1,32 +1,35 @@
 #!/bin/bash
 
-# 安装 expect
-echo -e "${b}检查 expect 是否已安装...${n}"
-if ! command -v expect &> /dev/null; then
-    echo -e "${b}expect 未安装，正在安装 expect...${n}"
-    sudo apt-get update
-    sudo apt-get install expect -y
-    echo -e "${g}expect 安装成功${n}"
-else echo -e "${g}expect 已安装${n}"; fi
+set -e
 
-# 安装 nvm
-echo -e "${b}检查 nvm 是否已安装...${n}"
-if command -v nvm &> /dev/null; then
-    echo -e "${b}nvm 已安装${n}"
-    sudo "$(dirname "$0")/src/uninstall_nvm.sh"
-fi
-sudo "$(dirname "$0")/src/init_nvm.sh"
+r='\033[31m'
+g='\033[32m'
+b='\033[34m'
+n='\033[0m'
 
-# 安装 pm2
-echo -e "${b}检查 pm2 是否已安装...${n}"
-if ! command -v pm2 &> /dev/null; then
-    echo -e "${b}pm2 未安装，正在安装 pm2...${n}"
-    sudo "$(dirname "$0")/src/init_pm2.sh"
-else echo -e "${g}pm2 已安装${n}"; fi
+echo -e "${b}Creating /root/configs directory...${n}"
+sudo mkdir -p /root/configs
 
-# 安装 vapor
-echo -e "${b}检查 vapor 是否已安装...${n}"
-if ! command -v vapor &> /dev/null; then
-    echo -e "${b}vapor 未安装，正在安装 vapor...${n}"
-    sudo "$(dirname "$0")/src/init_vapor.sh"
-else echo -e "${g}vapor 已安装${n}"; fi
+echo -e "${b}Changing to /root/configs directory...${n}"
+cd /root/configs
+
+echo -e "${b}Cloning the repository...${n}"
+git clone https://github.com/SJJC-Team/whooshing-module-manager.git
+
+echo -e "${b}Changing to whooshing-module-manager/env_init directory...${n}"
+cd whooshing-module-manager/env_init
+
+echo -e "${b}Setting execute permissions for init_env.sh and uninstall.sh...${n}"
+chmod +x src/init_all.sh
+chmod +x src/uninstall.sh
+
+echo -e "${b}Running uninstall.sh...${n}"
+sudo src/uninstall.sh
+
+echo -e "${b}Running init_all.sh...${n}"
+sudo src/init_all.sh
+
+echo -e "${b}Cleaning up...${n}"
+sudo rm -rf /root/configs/whooshing-module-manager
+
+echo -e "${g}Environment initialization complete!${n}"
