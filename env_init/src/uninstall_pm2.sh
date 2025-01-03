@@ -9,6 +9,7 @@ n='\033[0m'
 
 echo -e "${b}------------------- Pm2 卸载 -------------------${n}"
 
+. nvm use 23
 echo -e "${b}删除 pm2 工具${n}"
 npm uninstall pm2 -g
 sudo rm -rf ~/.pm2
