@@ -12,16 +12,9 @@ port=$1
 echo -e "${b}------------------- Percona PostgreSQL 创建服务 $port -------------------${n}"
 
 # 检查端口是否为空或者是否在有效范围内（1024 到 65535 之间）
-if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then
-    echo -e "${r}错误:请指定端口，且端口号必须在 1024 到 65535 之间${n}"
-    exit 1
-fi
-
+if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then echo -e "${r}错误:请指定端口，且端口号必须在 1024 到 65535 之间${n}"; exit 1; fi
 # 检查端口是否被占用
-if lsof -i:"$port" > /dev/null 2>&1; then
-    echo -e "${r}错误:端口 $port 已被占用${n}"
-    exit 1
-fi
+if lsof -i:"$port" > /dev/null 2>&1; then echo -e "${r}错误:端口 $port 已被占用${n}"; exit 1; fi
 
 mkdir -p /data/percona
 chown postgres:postgres /data
@@ -30,6 +23,7 @@ chmod -R 700 /data
 
 export PATH=/usr/lib/postgresql/17/bin:$PATH
 export VAULT_ADDR='unix:///opt/vault/vault.sock'
+source /root/.env
 
 # 检查 Vault 是否已解封
 echo -e "${b}检查 Vault 是否已解封...${n}"
@@ -38,16 +32,14 @@ if ! vault status > /dev/null 2>&1; then
     exit 1
 fi
 
-source /root/.env
-
 echo -e "${b}登录 Vault...${n}"
 vault login "$VAULT_ROOT_TOKEN" > /dev/null 2>&1 || { echo "${r}发生错误: vault 登陆失败！${n}" >&2; exit 1; }
-if ! vault kv get postgres/$port > /dev/null 2>&1; then 
+if ! vault kv get postgres/$port/root > /dev/null 2>&1; then 
     echo -e "${b}生成新的 Vault 密钥...${n}"
     if ! vault secrets list | grep -q '^postgres/'; then vault secrets enable -path=postgres kv; fi
-    vault kv put postgres/$port value=$(openssl rand -hex 64)
+    vault kv put postgres/$port/root value=$(openssl rand -hex 64)
 fi
-key=$(vault kv get -field=value postgres/$port 2>&1)
+key=$(vault kv get -field=value postgres/$port/root 2>&1)
 
 # 创建数据目录
 echo -e "${b}创建数据目录...${n}"
@@ -67,13 +59,14 @@ sudo -u postgres env "PATH=$PATH" pg_ctl start -D "$data_dir" -l $data_dir/log
 
 # 创建扩展 - pg_tde
 echo -e "${b}创建扩展 - pg_tde...${n}"
-sudo -u postgres psql -p $port -U postgres -c "CREATE EXTENSION pg_tde;"
-sudo -u postgres psql -p $port -U postgres -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$VAULT_ROOT_TOKEN','http://localhost:9412', 'postgres', NULL);"
-sudo -u postgres psql -p $port -U postgres -c "SELECT pg_tde_set_principal_key('tde', 'vault-provider');"
+sudo -u postgres psql -d template1 -p $port -U postgres -c "DROP DATABASE postgres;"
+sudo -u postgres psql -d template1 -p $port -U postgres -c "CREATE EXTENSION pg_tde;"
+sudo -u postgres psql -d template1 -p $port -U postgres -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$VAULT_ROOT_TOKEN','http://localhost:9412', 'postgres', NULL);"
+sudo -u postgres psql -d template1 -p $port -U postgres -c "SELECT pg_tde_set_principal_key('$port/template1/tde', 'vault-provider');"
 
 # 设置密码
 echo -e "${b}设置密码...${n}"
-sudo -u postgres psql -p $port -U postgres -c "ALTER USER postgres WITH PASSWORD '$key';"
+sudo -u postgres psql -d template1 -p $port -U postgres -c "ALTER USER postgres WITH PASSWORD '$key';"
 
 # 修改配置文件
 echo -e "${b}修改配置文件...${n}"
