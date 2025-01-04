@@ -60,7 +60,6 @@ fi
 if [[ $noenter = false ]]; then
     echo -e "${b}请记下您的主密钥切片，以及 root 令牌:${n}"
     echo -e "\n${b}Unseal Keys:${n}"; for key in "${keys[@]}"; do echo "$key"; done
-    echo -e "\n${b}Initial Root Token:${n}"; echo -e "$root_token\n"
     read -p "按回车继续..."
 fi
 
@@ -70,10 +69,16 @@ for ((i=0; i<$threshold; i++)); do
     vault operator unseal ${keys[$i]}
 done
 echo -e "\n${g}Vault 已成功解封${n}"
+
+echo -e "\n${g}写入到环境变量${n}"
+echo "export VAULT_ROOT_TOKEN=$root_token" >> /root/.env
+chown root:root /root/.env
+chmod 600 /root/.env
+
 if [[ $noenter = true ]]; then
     echo -e "${g}请记下您的主密钥切片，以及 root 令牌:${n}"
     echo -e "\n${b}Unseal Keys:${n}"; for key in "${keys[@]}"; do echo "$key"; done
-    echo -e "\n${b}Initial Root Token:${n}"; echo -e "$root_token\n"
     read -p "按回车继续..."
 fi
+
 echo -e "${b}------------------- Vault 初始化 完成 -------------------${n}"

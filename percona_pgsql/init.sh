@@ -7,15 +7,7 @@ g='\033[32m'
 b='\033[34m'
 n='\033[0m'
 
-vault_token=$1
-
 echo -e "${b}------------------- Percona PostgreSQL 初始化 -------------------${n}"
-
-# 检查 Vault token 是否为空
-if [[ -z "$vault_token" ]]; then
-    echo -e "${r}错误:请提供 Vault Token${n}"
-    exit 1
-fi
 
 export VAULT_ADDR='unix:///opt/vault/vault.sock'
 
@@ -26,10 +18,13 @@ if ! vault status > /dev/null 2>&1; then
     exit 1
 fi
 
+source /root/.env
+
 echo -e "${b}登录 Vault...${n}"
-vault login $vault_token
+vault login "$VAULT_ROOT_TOKEN" > /dev/null 2>&1 || { echo "${r}发生错误: vault 登陆失败！${n}" >&2; exit 1; }
 if ! vault kv get postgres/postgres > /dev/null 2>&1; then 
     echo -e "${b}生成新的 Vault 密钥...${n}"
+    if ! vault secrets list | grep -q '^postgres/'; then vault secrets enable -path=postgres kv; fi
     vault kv put postgres/postgres value=$(openssl rand -hex 64)
 fi
 key=$(vault kv get -field=value postgres/postgres 2>&1)

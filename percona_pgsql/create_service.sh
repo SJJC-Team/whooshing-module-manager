@@ -8,7 +8,6 @@ b='\033[34m'
 n='\033[0m'
 
 port=$1
-vault_token=$2
 
 echo -e "${b}------------------- Percona PostgreSQL 创建服务 $port -------------------${n}"
 
@@ -21,12 +20,6 @@ fi
 # 检查端口是否被占用
 if lsof -i:"$port" > /dev/null 2>&1; then
     echo -e "${r}错误:端口 $port 已被占用${n}"
-    exit 1
-fi
-
-# 检查 Vault token 是否为空
-if [[ -z "$vault_token" ]]; then
-    echo -e "${r}错误:请提供 Vault Token${n}"
     exit 1
 fi
 
@@ -45,10 +38,13 @@ if ! vault status > /dev/null 2>&1; then
     exit 1
 fi
 
+source /root/.env
+
 echo -e "${b}登录 Vault...${n}"
-vault login $vault_token
+vault login "$VAULT_ROOT_TOKEN" > /dev/null 2>&1 || { echo "${r}发生错误: vault 登陆失败！${n}" >&2; exit 1; }
 if ! vault kv get postgres/$port > /dev/null 2>&1; then 
     echo -e "${b}生成新的 Vault 密钥...${n}"
+    if ! vault secrets list | grep -q '^postgres/'; then vault secrets enable -path=postgres kv; fi
     vault kv put postgres/$port value=$(openssl rand -hex 64)
 fi
 key=$(vault kv get -field=value postgres/$port 2>&1)
@@ -72,7 +68,7 @@ sudo -u postgres env "PATH=$PATH" pg_ctl start -D "$data_dir" -l $data_dir/log
 # 创建扩展 - pg_tde
 echo -e "${b}创建扩展 - pg_tde...${n}"
 sudo -u postgres psql -p $port -U postgres -c "CREATE EXTENSION pg_tde;"
-sudo -u postgres psql -p $port -U postgres -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$vault_token','http://localhost:9412', 'postgres', NULL);"
+sudo -u postgres psql -p $port -U postgres -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$VAULT_ROOT_TOKEN','http://localhost:9412', 'postgres', NULL);"
 sudo -u postgres psql -p $port -U postgres -c "SELECT pg_tde_set_principal_key('tde', 'vault-provider');"
 
 # 设置密码
