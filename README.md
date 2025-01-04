@@ -24,7 +24,7 @@
   - **密钥存储和管理**：[Vault](https://developer.hashicorp.com/vault)
   - **数据库加密**：[Perconna PostgreSQL pg_tde](https://github.com/percona/pg_tde)
 
-初始化部署环境:
+初始化部署环境(**Ubuntu amd64 22.04 +**):
 
 ```shell
 wget https://raw.githubusercontent.com/SJJC-Team/whooshing-module-manager/refs/heads/develop/env_init/init.sh
