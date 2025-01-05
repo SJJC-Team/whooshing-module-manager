@@ -12,7 +12,7 @@ module=$2
 
 # 检查 module 是否为空
 
-echo -e "${b}------------------- Percona PostgreSQL 创建服务 $port -------------------${n}"
+echo -e "${b}------------------- Percona PostgreSQL 在模块 $module 创建服务 $port -------------------${n}"
 
 if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then echo -e "${r}错误:请指定端口，且端口号必须在 1024 到 65535 之间${n}"; exit 1; fi
 if lsof -i:"$port" > /dev/null 2>&1; then echo -e "${r}错误:端口 $port 已被占用${n}"; exit 1; fi
@@ -36,15 +36,14 @@ echo -e "${b}创建数据目录...${n}"
 mkdir -p "$data_dir"
 chown -R woo:whooshing "$data_dir"
 
-$(dirname "$0")/login_vault.sh
+$(dirname "$0")/vault_login.sh
 
-if ! vault kv get postgres/$port/woo > /dev/null 2>&1; then 
+if ! vault kv get $module/$port/role/woo > /dev/null 2>&1; then 
     echo -e "${b}生成新的 Vault 密钥...${n}"
-    if ! vault secrets list | grep -q '^postgres/'; then vault secrets enable -path=postgres kv; fi
-    vault kv put postgres/$port/woo value=$(openssl rand -hex 64)
+    vault kv put $module/$port/role/woo key=$(openssl rand -hex 64)
 fi
 
-if ! key=$(vault kv get -field=value postgres/$port/woo 2>/dev/null); then echo -e "${r}错误: 无法获取 Vault 密钥${n}"; exit 1; fi
+if ! key=$(vault kv get -field=key $module/$port/role/woo 2>/dev/null); then echo -e "${r}错误: 无法获取 Vault 密钥${n}"; exit 1; fi
 
 conf_file="$data_dir/postgresql.conf"
 
@@ -60,8 +59,8 @@ sudo -u woo env "PATH=$PATH" pg_ctl start -D "$data_dir" -l $data_dir/log
 echo -e "${b}创建扩展 - pg_tde...${n}"
 sudo -u woo psql -d template1 -p $port -U woo -c "DROP DATABASE postgres;"
 sudo -u woo psql -d template1 -p $port -U woo -c "CREATE EXTENSION pg_tde;"
-sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$WHOOSHING_VAULT_ROOT_TOKEN','http://localhost:9412', 'postgres', NULL);"
-sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_set_principal_key('$port/template1/tde', 'vault-provider');"
+sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$WHOOSHING_VAULT_ROOT_TOKEN','http://localhost:9412', '$module', NULL);"
+sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_set_principal_key('$port/tde/template1', 'vault-provider');"
 
 # 设置密码
 echo -e "${b}设置密码...${n}"
@@ -80,4 +79,4 @@ echo -e "${b}重启服务...${n}"
 sudo systemctl restart postgresql.service
 sudo -u woo env "PATH=$PATH" pg_ctl restart -D "$data_dir" -l $data_dir/log
 
-echo -e "${b}------------------- Percona PostgreSQL 创建服务 $port 完成 -------------------${n}"
+echo -e "${b}------------------- Percona PostgreSQL 在模块 $module 创建服务 $port 完成 -------------------${n}"
