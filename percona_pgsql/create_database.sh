@@ -16,10 +16,12 @@ if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then echo -e "${r}
 if [[ -z "$name" ]]; then echo -e "${r}错误:请指定数据库名称${n}"; exit 1; fi
 
 export PATH=/usr/lib/postgresql/17/bin:$PATH
-export VAULT_ADDR='unix:///opt/vault/vault.sock'
-source /root/.env
-vault login "$VAULT_ROOT_TOKEN" > /dev/null 2>&1 || { echo "${r}发生错误: vault 登陆失败！${n}" >&2; exit 1; }
-key=$(vault kv get -field=value postgres/$port/root 2>&1)
-sudo -u postgres PGPASSWORD=$key psql -d template1 -p $port -U postgres -c "CREATE DATABASE $name;"
-sudo -u postgres PGPASSWORD=$key psql -d $name -p $port -U postgres -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$VAULT_ROOT_TOKEN','http://localhost:9412', 'postgres', NULL);"
-sudo -u postgres PGPASSWORD=$key psql -d $name -p $port -U postgres -c "SELECT pg_tde_set_principal_key('$port/$name/tde', 'vault-provider');"
+source /home/woo/.env
+
+$(dirname "$0")/login_vault.sh
+
+if ! key=$(vault kv get -field=value postgres/$port/woo 2>/dev/null); then echo -e "${r}错误: 无法获取 Vault 密钥${n}"; exit 1; fi
+sudo -u woo PGPASSWORD=$key psql -d template1 -p $port -U woo -c "CREATE DATABASE $name;"
+sudo -u woo PGPASSWORD=$key psql -d $name -p $port -U woo -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$WHOOSHING_VAULT_ROOT_TOKEN','http://localhost:9412', 'postgres', NULL);"
+sudo -u woo PGPASSWORD=$key psql -d $name -p $port -U woo -c "SELECT pg_tde_set_principal_key('$port/$name/tde', 'vault-provider');"
+

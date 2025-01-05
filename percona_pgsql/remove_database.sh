@@ -16,10 +16,11 @@ if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then echo -e "${r}
 if [[ -z "$name" ]]; then echo -e "${r}错误:请指定数据库名称${n}"; exit 1; fi
 
 export PATH=/usr/lib/postgresql/17/bin:$PATH
-export VAULT_ADDR='unix:///opt/vault/vault.sock'
-source /root/.env
-vault login "$VAULT_ROOT_TOKEN" > /dev/null 2>&1 || { echo "${r}发生错误: vault 登陆失败！${n}" >&2; exit 1; }
+source /home/woo/.env
+
+$(dirname "$0")/login_vault.sh
+
 key=$(vault kv get -field=value postgres/$port/root 2>&1)
-sudo -u postgres PGPASSWORD=$key psql -d template1 -p $port -U postgres -c "DROP DATABASE $name;"
+sudo -u woo PGPASSWORD=$key psql -d template1 -p $port -U woo -c "DROP DATABASE $name;"
 $(dirname "$0")/vault_recursive_delete_secret.sh postgres/data/$port/$name
 echo -e "${g}成功: 已删除在端口 $port 的数据库 $name 和相关的 Vault 密钥${n}"
