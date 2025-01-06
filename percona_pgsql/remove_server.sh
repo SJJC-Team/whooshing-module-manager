@@ -7,8 +7,8 @@ g='\033[32m'
 b='\033[34m'
 n='\033[0m'
 
-port=$1
-module=$2
+module=$1
+port=$2
 
 echo -e "${b}------------------- 移除模块 $module 的 Percona $port 服务 -------------------${n}"
 

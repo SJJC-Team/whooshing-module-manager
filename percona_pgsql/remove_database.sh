@@ -7,9 +7,9 @@ g='\033[32m'
 b='\033[34m'
 n='\033[0m'
 
-port=$1
-database=$2
-module=$3
+module=$1
+port=$2
+database=$3
 
 echo -e "${b}------------------- 移除模块 $module 的 $port 端口的数据库 $database -------------------${n}"
 

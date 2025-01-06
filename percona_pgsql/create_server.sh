@@ -7,8 +7,8 @@ g='\033[32m'
 b='\033[34m'
 n='\033[0m'
 
-port=$1
-module=$2
+module=$1
+port=$2
 
 # 检查 module 是否为空
 
