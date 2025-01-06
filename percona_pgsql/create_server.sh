@@ -26,15 +26,13 @@ percona_dir="$module_dir/percona"
 data_dir="$percona_dir/$port"
 
 if [[ ! -d "$module_dir" ]]; then echo -e "${r}错误: 模块 $module 不存在${n}"; exit 1; fi
-
-# 备份数据目录
-echo -e "${b}备份数据目录(如果已有)...${n}"
-if [[ -d "$data_dir" ]]; then mv $data_dir $data_dir-$(date +%Y%m%d%H%M%S); fi
+if [[ -d "$data_dir" ]]; then echo -e "${r}错误: 该服务已经存在${n}"; exit 1; fi
 
 # 创建数据目录
 echo -e "${b}创建数据目录...${n}"
 mkdir -p "$data_dir"
-chown -R woo:whooshing "$data_dir"
+chown -R woo:whooshing "$percona_dir"
+chmod -R 700 "$percona_dir"
 
 $(dirname "$0")/vault_login.sh
 

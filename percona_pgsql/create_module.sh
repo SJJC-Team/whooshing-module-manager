@@ -18,7 +18,7 @@ module_dir="$WHOOSHING_DATA_DIR/$module"
 
 $(dirname "$0")/vault_login.sh
 
-if vault secrets list | grep -q "^$module/"; then echo -e "${r}存储引擎 $module 已经存在，创建失败"; exit 1; fi
+if vault secrets list | grep -q "^$module/"; then echo -e "${r}存储引擎 $module 已经存在，创建失败${n}"; exit 1; fi
 
 echo -e "${b}启动密钥引擎...${n}"
 vault secrets enable -path=$module -version=2 kv

@@ -13,12 +13,14 @@ database=$3
 
 echo -e "${b}------------------- 移除模块 $module 的 $port 端口的数据库 $database -------------------${n}"
 
+source /home/woo/.env
+
 if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then echo -e "${r}错误:请指定端口，且端口号必须在 1024 到 65535 之间${n}"; exit 1; fi
 if [[ -z "$database" ]]; then echo -e "${r}错误:请指定数据库名称${n}"; exit 1; fi
 if [[ -z "$module" ]]; then echo -e "${r}错误:请指定模块名称${n}"; exit 1; fi
+if [[ ! -d "$WHOOSHING_DATA_DIR/$module/percona/$port" ]]; then echo -e "${r}错误: 模块 $module 和 PostgreSQL 服务 $port 不存在${n}"; exit 1; fi
 
 export PATH=/usr/lib/postgresql/17/bin:$PATH
-source /home/woo/.env
 
 if ! key=$(vault kv get -field=key $module/$port/role/woo 2>/dev/null); then echo -e "${r}错误: 无法获取 Vault 密钥${n}"; exit 1; fi
 

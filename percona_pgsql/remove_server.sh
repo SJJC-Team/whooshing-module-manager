@@ -12,13 +12,14 @@ port=$2
 
 echo -e "${b}------------------- 移除模块 $module 的 Percona $port 服务 -------------------${n}"
 
-if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then echo -e "${r}错误:请指定端口，且端口号必须在 1024 到 65535 之间${n}"; exit 1; fi
-if [[ -z "$module" ]]; then echo -e "${r}错误:请指定模块名称${n}"; exit 1; fi
-
-export PATH=/usr/lib/postgresql/17/bin:$PATH
 source /home/woo/.env
 
-backup_name=${3:-$port-$(date +%Y%m%d%H%M%S)}
+if [[ -z "$port" || "$port" -lt 1024 || "$port" -gt 65535 ]]; then echo -e "${r}错误:请指定端口，且端口号必须在 1024 到 65535 之间${n}"; exit 1; fi
+if [[ -z "$module" ]]; then echo -e "${r}错误:请指定模块名称${n}"; exit 1; fi
+if [[ ! -d "$WHOOSHING_DATA_DIR/$module" ]]; then echo -e "${r}错误: 模块 $module 不存在${n}"; exit 1; fi
+
+export PATH=/usr/lib/postgresql/17/bin:$PATH
+
 percona_dir="$WHOOSHING_DATA_DIR/$module/percona"
 data_dir="$percona_dir/$port"
 
