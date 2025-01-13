@@ -42,8 +42,9 @@ where
 
 protocol LCDCmd: ParsableCommand {
     associatedtype Super: LCDS
+    associatedtype CmdRes = ()
     static var name: String { get }
-    mutating func cmd(env: Env) throws
+    mutating func cmd(env: Env) throws -> CmdRes
 }
 
 extension LCDS {
@@ -59,11 +60,13 @@ extension LCDCmd {
     mutating func run() throws {
         let env = try Env()
         try Self.Super.begin(env: env)
-        try self.cmd(env: env)
+        let _ = try self.cmd(env: env)
         try Self.Super.end(env: env)
     }
-    
-    mutating func cmd(env: Env) throws {}
+}
+
+extension LCDCmd where CmdRes == () {
+    func cmd(env: Env) throws {}
 }
 
 protocol List: LCDCmd {}

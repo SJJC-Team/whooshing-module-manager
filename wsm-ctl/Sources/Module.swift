@@ -7,10 +7,12 @@ struct Module: LCDS {
     
     struct L: List {
         typealias Super = Module
-        func cmd(env: Env) throws {
+        func cmd(env: Env) throws -> [String] {
             let modules = try FS.ls(path: env.dataDir, dir: true, hiddenFile: false)
-            if modules.isEmpty { print("无服务模块".info) }
-            for module in modules { print(module.info) }
+            let isEmpty = modules.isEmpty
+            if isEmpty { print("无服务模块".info) }
+            else { for module in modules { print(module.info) } }
+            return modules
         }
     }
     
@@ -33,11 +35,14 @@ struct Module: LCDS {
             try Sh.Vault.login(env: env)
             let dir = env.dataDir + "/" + name
             guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
+            let dbs = try PgService.L.list(module: name,  env: env)
+            guard dbs.count == 0 else { 
+                print("该模块还有以下 PostgreSQL 服务模块，请先删除:".warn)
+                for db in dbs { print(db.info) }
+                throw Err.pgServiceExist 
+            }
             let backupName = Tool.bakName(name: name)
-            
-            
-
-            try? Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
+            try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
             try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)
             try FS.mv(path: dir, to: env.dataDir + "/.trash/" + backupName)
         }
@@ -49,6 +54,7 @@ struct Module: LCDS {
     
     enum Err: String, ErrList {
         case moduleNotFound = "模块不存在"
+        case pgServiceExist = "PostgreSQL 服务未删除"
     }
     
 }

@@ -11,11 +11,18 @@ struct PgService: LCDS {
 
         @Argument(help: "模块名称") var module: String
 
-        func cmd(env: Env) throws {
+        func cmd(env: Env) throws -> [String] { 
+            let dirs = try Self.list(module: module, env: env) 
+            let isEmpty = dirs.isEmpty
+            if isEmpty { print("无 PostgreSQL 服务".info) }
+            else { for dir in dirs { print(dir.info) } }
+            return dirs
+        }
+
+        static func list(module: String, env: Env) throws -> [String] {
             let perconaDir = env.dataDir + "/" + module + "/percona"
             let dirs = try FS.ls(path: perconaDir, dir: true, hiddenFile: false)
-            if dirs.isEmpty { print("无 PostgreSQL 服务".info) }
-            for dir in dirs { print(dir.info) }
+            return dirs
         }
     }
     
