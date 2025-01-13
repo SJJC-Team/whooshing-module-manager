@@ -5,34 +5,50 @@ struct Module: LCDS {
     
     static let name = "module"
     
-    static func begin(env: Env) throws {
-        try Sh.Vault.login(env: env)
-    }
-    
     struct L: List {
         typealias Super = Module
+        func cmd(env: Env) throws {
+            let modules = try FS.ls(path: env.dataDir, dir: true, hiddenFile: false)
+            for module in modules { print(module.info) }
+        }
     }
     
     struct C: Create {
         typealias Super = Module
-        
         @Argument var name: String
-        
         func cmd(env: Env) throws {
+            try Sh.Vault.login(env: env)
             let dir = env.dataDir + "/" + name
             try Sh.Vault.newEngine(module: name, env: env)
             try FS.mkdir(path: dir, slience: true, withIntermediates: true)
-            try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770)
+            try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
         }
     }
     
     struct D: Delete {
         typealias Super = Module
+        @Argument var name: String
+        func cmd(env: Env) throws {
+            try Sh.Vault.login(env: env)
+            let dir = env.dataDir + "/" + name
+            guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
+            let backupName = name + "-" + Date().description
+            
+            //let percona_dir =  dir + "/percona"
+            // todo: 列出所有的正在运行的数据库
+
+            try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
+            try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)
+            try FS.mv(path: dir, to: env.dataDir + "/.trash/" + backupName)
+        }
     }
     
     struct S: Stop {
         typealias Super = Module
     }
     
+    enum Err: String, ErrList {
+        case moduleNotFound = "模块不存在"
+    }
     
 }
