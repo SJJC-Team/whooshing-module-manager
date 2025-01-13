@@ -34,7 +34,7 @@ sudo -u woo psql -d template1 -p $port -U woo -c "ALTER USER woo WITH PASSWORD '
 # 修改配置文件
 echo -e "${b}修改配置文件...${n}"
 rm -f $data_dir/pg_hba.conf
-cp "$(dirname "$0")/pg_hba.conf" $data_dir/pg_hba.conf
+cp "$(dirname "$0")/pg_hba.conf" "$data_dir/pg_hba.conf"
 
 chown -R woo:whooshing "$data_dir"
 chmod -R 700 "$data_dir"

@@ -9,7 +9,7 @@ struct Module: LCDS {
         typealias Super = Module
         func cmd(env: Env) throws {
             let modules = try FS.ls(path: env.dataDir, dir: true, hiddenFile: false)
-            if modules.isEmpty { print("无服务模块".succ) }
+            if modules.isEmpty { print("无服务模块".info) }
             for module in modules { print(module.info) }
         }
     }
@@ -35,8 +35,7 @@ struct Module: LCDS {
             guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
             let backupName = Tool.bakName(name: name)
             
-            //let percona_dir =  dir + "/percona"
-            // todo: 列出所有的正在运行的数据库
+            
 
             try? Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
             try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)

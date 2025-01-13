@@ -15,8 +15,12 @@ struct Sh {
             case vaultModuleBackup = "vault_module_backup"
             case vaultNewKey = "vault_new_key"
             case vaultGetKey = "vault_get_key"
+            case vaultDbBackup = "vault_db_backup"
+            case vaultDeleteKey = "vault_delete_key"
             case pgInitService = "pg_init_service"
             case pgRestartService = "pg_restart_service"
+            case pgStartService = "pg_start_service"
+            case pgStopService = "pg_stop_service"
         }
 
         static func sh(_ shell: Shell) throws -> String {
@@ -33,13 +37,15 @@ struct Sh {
             case vaultLoginFailed = "Vault 登陆失败"
             case vaultIsSealed = "Vault 为封存状态"
             case vaultEngineNotFound = "Vault 引擎不存在"
+            case vaultDeleteKeyFailed = "删除密钥失败"
+            case vaultDisableKeyFailed = "禁用密钥失败"
             case backupFileCreateFailed = "备份文件创建失败"
             case vaultUnknowError = "Vault 未知错误"
         }
 
         static func login(env: Env) throws {
             let res = try run(in: File.sh(.vaultLogin), env: env)
-            switch (res.code) {
+            switch res.code {
                 case 1: throw Err.vaultIsSealed
                 case 2: throw Err.vaultLoginFailed
                 case 0: print("成功登陆到 Vault".succ)
@@ -49,8 +55,8 @@ struct Sh {
 
         static func newEngine(module: String, env: Env) throws {
             let res = try run(in: File.sh(.vaultNewEngine), paras: ["module": module], env: env)
-            switch (res.code) {
-                case 1: throw Err.vaultEngineExist
+            switch res.code {
+                case 1: throw Err.vaultEngineExist.d(module)
                 case 0: print("密钥引擎创建成功".succ)
                 default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
             }
@@ -61,19 +67,19 @@ struct Sh {
                 "module": module,
                 "backup_name": backupName
             ], env: env)
-            switch (res.code) {
-                case 1: throw Err.vaultEngineNotFound
-                case 2: print("存储引擎\(module)为空，无需备份密钥，禁用引擎\(module)完成".succ)
-                case 3: throw Err.backupFileCreateFailed
-                case 0: print("已备份引擎 \(module) 的密钥到 \(backupName)".succ)
+            switch res.code {
+                case 1: throw Err.vaultEngineNotFound.d(module)
+                case 2: print("存储引擎 \(module) 为空，无需备份密钥，禁用引擎 \(module) 完成".info)
+                case 3: throw Err.backupFileCreateFailed.d(module)
+                case 0: print("已备份引擎 \(module) 的密钥到 /module-bak/\(backupName)".succ)
                 default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
             }
         }
 
         static func newKey(in path: String, env: Env) throws {
             let res = try run(in: File.sh(.vaultNewKey), paras: ["path": path], env: env)
-            switch (res.code) {
-                case 1: print("密钥已存在于 \(path)，无需创建".succ)
+            switch res.code {
+                case 1: print("密钥已存在于 \(path)，无需创建".info)
                 case 0: print("成功创建密钥到 \(path)".succ)
                 default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
             }
@@ -85,12 +91,40 @@ struct Sh {
             guard let str = String(data: res.res, encoding: .utf8) else { throw Err.vaultUnknowError.d("Vault 解包密钥失败-\(path)") }
             return str
         }
+
+        static func dbBackup(module: String, port: Int, backupName: String, env: Env) throws {
+            let res = try run(in: File.sh(.vaultDbBackup), paras: [
+                "module": module,
+                "port": String(port),
+                "backup_name": backupName
+            ], env: env)
+            switch res.code {
+                case 1: throw Err.vaultEngineNotFound.d(module)
+                case 2: print("密钥存储 \(module)/\(port) 为空，无需备份密钥".info)
+                case 3: throw Err.backupFileCreateFailed.d("\(module).\(port)")
+                case 0: print("已备份密钥 \(module)/\(port) 到 /\(module)/server-bak/\(backupName)".succ)
+                default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+
+        static func deleteKey(in path: String, env: Env) throws {
+            let res = try run(in: File.sh(.vaultDeleteKey), paras: ["path": path], env: env)
+            switch res.code {
+                case 3: throw Err.vaultDisableKeyFailed.d(path)
+                case 2: throw Err.vaultDeleteKeyFailed.d(path)
+                case 1: print("密钥 \(path) 不存在，无需删除".info)
+                case 0: print("成功删除密钥 \(path)".succ)
+                default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
     }
 
     struct PG {
 
         enum Err: String, ErrList {
             case pgUnknowError = "PostgreSQL 未知错误"
+            case pgRestartFailed = "PostgreSQL 重启失败"
+            case pgStopFailed = "PostgreSQL 停止失败"
         }
 
         static func initS(module: String, port: Int, key: String, env: Env) throws {
@@ -106,8 +140,20 @@ struct Sh {
 
         static func restart(dataDir: String, env: Env) throws {
             let res = try run(in: File.sh(.pgRestartService), paras: ["data_dir": dataDir], env: env)
-            guard res.code == 0 else { throw Err.pgUnknowError.d(String(data: res.res, encoding: .utf8)!) }
-            print("PostgreSQL 服务 \(dataDir) 重启成功".succ)
+            guard res.code == 0 else { throw Err.pgRestartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PostgreSQL 服务 \(dataDir) 已重启".succ)
+        }
+
+        static func start(dataDir: String, env: Env) throws {
+            let res = try run(in: File.sh(.pgStartService), paras: ["data_dir": dataDir], env: env)
+            guard res.code == 0 else { throw Err.pgStopFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PostgreSQL 服务 \(dataDir) 已启动".succ)
+        }
+
+        static func stop(dataDir: String, env: Env) throws {
+            let res = try run(in: File.sh(.pgStopService), paras: ["data_dir": dataDir], env: env)
+            guard res.code == 0 else { throw Err.pgStopFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PostgreSQL 服务 \(dataDir) 已停止".succ)
         }
     }
 

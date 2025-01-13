@@ -9,7 +9,10 @@ extension String: @retroactive Error {}
 
 extension ErrList { 
     var description: String { (String(reflecting: Self.self) + ":" + self.rawValue).err } 
-    func d(_ detail: String) -> String { (String(reflecting: Self.self) + ":" + self.rawValue + "(" + detail + ")").err }
+    func d(_ detail: String) -> String {
+        let trimmedDetail = detail.trimmingCharacters(in: .whitespacesAndNewlines)
+        return (String(reflecting: Self.self) + ":" + self.rawValue + (trimmedDetail.isEmpty ? "" : "(" + trimmedDetail + ")")).err
+    }
 }
 
 extension String {
