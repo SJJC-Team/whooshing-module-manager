@@ -22,6 +22,7 @@ export PATH=/usr/lib/postgresql/17/bin:$PATH
 
 percona_dir="$WHOOSHING_DATA_DIR/$module/percona"
 data_dir="$percona_dir/$port"
+backup_name=$port-$(date +%Y%m%d%H%M%S)
 
 echo -e "${b}备份模块 $module 的密钥...${n}"
 $(dirname "$0")/vault_backup_database.sh $port $module $backup_name
