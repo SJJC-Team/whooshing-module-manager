@@ -5,8 +5,6 @@ g='\033[32m'
 b='\033[34m'
 n='\033[0m'
 
-source /home/woo/.env
-
 # 检查 Vault 是否已解封
 echo -e "${b}检查 Vault 是否已解封...${n}"
 if ! vault status > /dev/null 2>&1; then echo -e "${r}错误: Vault 未解封，请先解封 Vault${n}"; exit 1; fi

@@ -1,5 +1,24 @@
 import ArgumentParser
 
+protocol ErrList: Error, CustomStringConvertible {
+    var rawValue: String { get }
+    func d(_ detail: String) -> String
+}
+
+extension String: @retroactive Error {}
+
+extension ErrList { 
+    var description: String { (String(reflecting: Self.self) + ":" + self.rawValue).err } 
+    func d(_ detail: String) -> String { (String(reflecting: Self.self) + ":" + self.rawValue + "(" + detail).err + ")" }
+}
+
+extension String {
+    var err: String { "\u{001B}[31m\(self)\u{001B}[0m" }
+    var info: String { "\u{001B}[34m\(self)\u{001B}[0m" }
+    var succ: String { "\u{001B}[32m\(self)\u{001B}[0m" }
+    var warn: String { "\u{001B}[33m\(self)\u{001B}[0m" }
+}
+
 protocol LCDS
 where
     Self.L.Super == Self,
@@ -14,8 +33,8 @@ where
     associatedtype D: Delete
     associatedtype S: Stop
     
-    static func begin() throws
-    static func end() throws
+    static func begin(env: Env) throws
+    static func end(env: Env) throws
 }
 
 protocol LCDCmd: ParsableCommand {
@@ -26,18 +45,19 @@ protocol LCDCmd: ParsableCommand {
 
 extension LCDS {
     static var subCmds: [ParsableCommand.Type] { [L.self, C.self, D.self, S.self] }
-    static func begin() throws {}
-    static func end() throws {}
+    static func begin(env: Env) throws {}
+    static func end(env: Env) throws {}
 }
 
 extension LCDCmd {
-    static var cmdName: String { Super.name + "-" + Self.name }
+    static var cmdName: String { Self.name + "-" + Super.name }
     static var configuration: CommandConfiguration { .init(commandName: Self.cmdName) }
     
     mutating func run() throws {
-        try Self.Super.begin()
-        try self.cmd(env: WSM.getEnv())
-        try Self.Super.end()
+        let env = try Env()
+        try Self.Super.begin(env: env)
+        try self.cmd(env: env)
+        try Self.Super.end(env: env)
     }
     
     mutating func cmd(env: Env) throws {}

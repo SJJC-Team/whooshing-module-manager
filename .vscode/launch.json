@@ -17,6 +17,24 @@
             "name": "Release wsm-ctl (wsm-ctl)",
             "program": "${workspaceFolder:whooshing-module-manager}/wsm-ctl/.build/release/wsm-ctl",
             "preLaunchTask": "swift: Build Release wsm-ctl (wsm-ctl)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:whooshing-module-manager}/wsm-ctl",
+            "name": "Debug wsm (wsm-ctl)",
+            "program": "${workspaceFolder:whooshing-module-manager}/wsm-ctl/.build/debug/wsm",
+            "preLaunchTask": "swift: Build Debug wsm (wsm-ctl)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:whooshing-module-manager}/wsm-ctl",
+            "name": "Release wsm (wsm-ctl)",
+            "program": "${workspaceFolder:whooshing-module-manager}/wsm-ctl/.build/release/wsm",
+            "preLaunchTask": "swift: Build Release wsm (wsm-ctl)"
         }
     ]
 }
