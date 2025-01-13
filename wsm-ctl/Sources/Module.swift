@@ -9,13 +9,14 @@ struct Module: LCDS {
         typealias Super = Module
         func cmd(env: Env) throws {
             let modules = try FS.ls(path: env.dataDir, dir: true, hiddenFile: false)
+            if modules.isEmpty { print("无服务模块".succ) }
             for module in modules { print(module.info) }
         }
     }
     
     struct C: Create {
         typealias Super = Module
-        @Argument var name: String
+        @Argument(help: "模块名称") var name: String
         func cmd(env: Env) throws {
             try Sh.Vault.login(env: env)
             let dir = env.dataDir + "/" + name
@@ -27,17 +28,17 @@ struct Module: LCDS {
     
     struct D: Delete {
         typealias Super = Module
-        @Argument var name: String
+        @Argument(help: "模块名称") var name: String
         func cmd(env: Env) throws {
             try Sh.Vault.login(env: env)
             let dir = env.dataDir + "/" + name
             guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
-            let backupName = name + "-" + Date().description
+            let backupName = Tool.bakName(name: name)
             
             //let percona_dir =  dir + "/percona"
             // todo: 列出所有的正在运行的数据库
 
-            try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
+            try? Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
             try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)
             try FS.mv(path: dir, to: env.dataDir + "/.trash/" + backupName)
         }

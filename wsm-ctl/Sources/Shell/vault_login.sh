@@ -1,3 +1,5 @@
-vault status > /dev/null 2>&1 || { exit 1; }
+set -e
+echo $WHOOSHING_VAULT_ROOT_TOKEN
+vault status || { exit 1; }
 
-vault login "$WHOOSHING_VAULT_ROOT_TOKEN" > /dev/null 2>&1 || { exit 2; }
+vault login "$WHOOSHING_VAULT_ROOT_TOKEN" || { exit 2; }

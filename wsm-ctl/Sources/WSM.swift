@@ -4,7 +4,7 @@ import SwiftDotenv
 
 @main
 struct WSM: ParsableCommand {
-    static let configuration = CommandConfiguration( subcommands: Module.subCmds )
+    static let configuration = CommandConfiguration( subcommands: Module.subCmds + PgServer.subCmds )
 }
 
 struct Env {

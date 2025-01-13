@@ -1,5 +1,7 @@
 # module, backup_name
 
+set -e
+
 module_dir="$WHOOSHING_DATA_DIR/$module"
 
 if ! vault secrets list | grep -q "^$module/"; then exit 1; fi
