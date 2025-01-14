@@ -24,6 +24,7 @@ struct Sh {
             case pgListDb = "pg_list_db"
             case pgCreateDb = "pg_create_db"
             case pgDeleteDb = "pg_delete_db"
+            case pgTestDb = "pg_test_db"
         }
 
         static func sh(_ shell: Shell) throws -> String {
@@ -131,6 +132,7 @@ struct Sh {
             case pgCreateDbFailed = "PostgreSQL 数据库创建失败"
             case pgDeleteDbFailed = "PostgreSQL 数据库删除失败"
             case pgListDbFailed = "PostgreSQL 数据库列表获取失败"
+            case pgDbVaildFailed = "PostgreSQL 数据库验证失败"
         }
 
         static func create(module: String, port: Int, key: String, env: Env) throws {
@@ -191,13 +193,26 @@ struct Sh {
                 let res = try run(in: File.sh(.pgListDb), paras: ["port": String(port), "key": key], env: env)
                 if (res.res.count == 0) { return [] }
                 guard res.code == 0 else { throw Err.pgListDbFailed.d(String(data: res.res, encoding: .utf8)!) }
-                guard let dbs = String(data: res.res, encoding: .utf8)?.components(separatedBy: "\n") else { throw Err.pgListDbFailed.d("PostgreSQL 数据库列表解包失败-\(port)") }
+                guard let dbs = String(data: res.res, encoding: .utf8)?.components(separatedBy: " ") else { throw Err.pgListDbFailed.d("PostgreSQL 数据库列表解包失败-\(port)") }
                 let dbList = try dbs.map {
                     let r = $0.split(separator: "|"); 
                     guard r.count == 2 else { throw Err.pgListDbFailed.d("PostgreSQL 数据库列表解构解构失败-\(port)") }
                     return (oid: String(r[0]), db: String(r[1])) 
                 }
                 return dbList
+            }
+
+            static func test(port: Int, database: String, key: String, env: Env) throws -> Bool {
+                let res = try run(in: File.sh(.pgTestDb), paras: [
+                    "port": String(port),
+                    "database": database,
+                    "key": key
+                ], env: env)
+                switch res.code {
+                    case 0: return true
+                    case 1: return false
+                    default: throw Err.pgDbVaildFailed.d(String(data: res.res, encoding: .utf8)!)
+                }
             }
         }
     }
@@ -224,6 +239,7 @@ struct Sh {
 struct FS {
 
     enum Err: String, ErrList {
+        case dirTraversalFailed = "目录遍历失败"
         case fileCreateFailed = "文件创建失败"
         case dirCreateFailed = "目录创建失败"
         case setPermissionFailed = "设置权限失败"
@@ -234,7 +250,7 @@ struct FS {
     static let fileManager = FileManager.default
 
     static func ls(path: String, dir: Bool = false, hiddenFile: Bool = false) throws -> [String] {
-        guard let files = try? fileManager.contentsOfDirectory(atPath: path) else { throw Err.fileCreateFailed }
+        guard let files = try? fileManager.contentsOfDirectory(atPath: path) else { throw Err.dirTraversalFailed.d(path) }
         return files.filter { (file) -> Bool in
             var isDir: Bool = false
             let _ = fileManager.fileExists(atPath: path.appendingPathComponent(file), isDirectory: &isDir)
@@ -243,13 +259,13 @@ struct FS {
         }
     }
 
-    static func mkdir(path: String, slience: Bool = true, withIntermediates p: Bool = false) throws {
+    static func mkdir(path: String, slience: Bool = true, withIntermediates p: Bool = false, output: Bool = true) throws {
         if !fileManager.fileExists(atPath: path) {
             do { try fileManager.createDirectory(atPath: path, withIntermediateDirectories: p, attributes: nil) } catch let err { throw Err.dirCreateFailed.d(err.localizedDescription) }
-            print("创建目录: \(path) 成功".succ)
+            if (output) { print("创建目录: \(path) 成功".succ) }
             return
         } else if !slience { throw Err.dirExist }
-        print("目录: \(path) 已存在，无需创建".succ)
+        if (output) { print("目录: \(path) 已存在，无需创建".succ) }
     }
 
     static func mv(path: String, to: String) throws {

@@ -3,15 +3,14 @@ import Foundation
 
 struct PgService: LCDS {
     static let name = "pgservice"
-
+    static let paraLabel = "端口"
     static var subCmds: [any ParsableCommand.Type] { [L.self, C.self, D.self, S.self, Restart.self, Start.self] }
 
     struct L: List {
         typealias Super = PgService
-
         @Argument(help: "模块名称") var module: String
-
         func cmd(env: Env) throws -> [String] { 
+            try Module.paraAvailable(module: module, env: env)
             let dirs = try Self.list(module: module, env: env) 
             let isEmpty = dirs.isEmpty
             if isEmpty { print("无 PostgreSQL 服务".info) }
@@ -20,7 +19,8 @@ struct PgService: LCDS {
         }
 
         static func list(module: String, env: Env) throws -> [String] {
-            let perconaDir = env.dataDir + "/" + module + "/percona"
+            let perconaDir = "\(env.dataDir)/\(module)/percona/"
+            try FS.mkdir(path: perconaDir, slience: true, withIntermediates: true, output: false)
             let dirs = try FS.ls(path: perconaDir, dir: true, hiddenFile: false)
             return dirs
         }
@@ -30,14 +30,15 @@ struct PgService: LCDS {
         typealias Super = PgService
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, help: "PostgreSQL 将用于监听的端口号") var port: Int
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 将用于监听的端口号") var ports: [Int]
+        var paras: [Int] { ports }
+        func one(para port: Int, env: Env) throws {
+            try Module.paraAvailable(module: module, env: env)
 
-        func cmd(env: Env) throws {
-            let moduleDir = env.dataDir + "/" + module
+            let moduleDir = "\(env.dataDir)/\(module)"
             let dataDir = "\(moduleDir)/percona/\(port)"
-            
+
             guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
-            guard FS.isExist(path: moduleDir, dir: true) == true else { throw Err.moduleNotFound.d(moduleDir) }
             guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
             guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.portOccupied.d(String(port)) }
             
@@ -56,25 +57,14 @@ struct PgService: LCDS {
         typealias Super = PgService
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
-
-        func cmd(env: Env) throws {
-            let moduleDir = env.dataDir + "/" + module
-            let perconaDir =  moduleDir + "/percona"
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
+        var paras: [Int] { ports }
+        func one(para port: Int, env: Env) throws {
+            try paraAvailable(module: module, port: port, env: env)
+            let perconaDir =  env.dataDir + "/" + module + "/percona"
             let dataDir = "\(perconaDir)/\(port)"
-
-            guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
-            guard FS.isExist(path: moduleDir, dir: true) == true else { throw Err.moduleNotFound.d(moduleDir) }
-
+            guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.serviceIsRunning.d("\(port), 您不能删除正在运行的服务") }
             let backupName = Tool.bakName(name: String(port))
-
-            let dbs = try PgDatabase.L.list(module: module, port: port, env: env)
-            guard dbs.count == 0 else {
-                print("该模块还有以下 PostgreSQL 数据库，请先删除:".warn)
-                for db in dbs { print("\(db.db)(\(db.oid))".info) }
-                throw Err.pgDatabaseExist
-            }
-
             try Sh.Vault.dbBackup(module: module, port: port, backupName: backupName, env: env)
             try Sh.Vault.deleteKey(in: "\(module)/\(port)", env: env)
             try? Sh.PG.stop(dataDir: dataDir, env: env)
@@ -87,46 +77,61 @@ struct PgService: LCDS {
         typealias Super = PgService
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
-
-        func cmd(env: Env) throws {
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
+        var paras: [Int] { ports }
+        func one(para port: Int, env: Env) throws {
+            try paraAvailable(module: module, port: port, env: env)
+            guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Err.serviceIsNotRunning.d(String(port)) }
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
             try Sh.PG.stop(dataDir: dataDir, env: env)
         }
     }
 
-    struct Restart: LCDCmd {
+    struct Restart: LCDExpand {
         typealias Super = PgService
         static var name: String { "restart" }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
-
-        func cmd(env: Env) throws {
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
+        var paras: [Int] { ports }
+        func one(para port: Int, env: Env) throws {
+            try paraAvailable(module: module, port: port, env: env)
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
             try Sh.PG.restart(dataDir: dataDir, env: env)
         }
     }
 
-    struct Start: LCDCmd {
+    struct Start: LCDExpand {
         typealias Super = PgService
         static var name: String { "start" }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
-
-        func cmd(env: Env) throws {
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
+        var paras: [Int] { ports }
+        func one(para port: Int, env: Env) throws {
+            try paraAvailable(module: module, port: port, env: env)
+            guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.serviceIsRunning.d(String(port)) }
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
             try Sh.PG.start(dataDir: dataDir, env: env)
         }
     }
 
+    static func paraAvailable(module: String, port: Int, env: Env) throws {
+        try Module.paraAvailable(module: module, env: env)
+        let moduleDir = env.dataDir + "/" + module
+        let dataDir = "\(moduleDir)/percona/\(port)"
+        guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
+        guard FS.isExist(path: dataDir, dir: true) == true else { throw Err.serviceNotFound.d(dataDir) }
+    }
+
     enum Err: String, ErrList {
-        case moduleNotFound = "模块不存在"
         case portOccupied = "端口被占用"
         case portNotCorrect = "端口号不正确, 请在 1024 ~ 65535 之间"
         case pgDatabaseExist = "PostgreSQL 数据库未删除"
         case serviceAlreadyExist = "PostgreSQL 服务已存在"
+        case serviceNotFound = "PostgreSQL 服务不存在"
+        case serviceIsRunning = "PostgreSQL 服务正在运行"
+        case serviceIsNotRunning = "PostgreSQL 服务未运行"
     }
 
 }

@@ -35,6 +35,8 @@ where
     associatedtype C: Create
     associatedtype D: Delete
     associatedtype S: Stop
+
+    static var paraLabel: String { get }
     
     static func begin(env: Env) throws
     static func end(env: Env) throws
@@ -49,6 +51,7 @@ protocol LCDCmd: ParsableCommand {
 
 extension LCDS {
     static var subCmds: [ParsableCommand.Type] { [L.self, C.self, D.self, S.self] }
+    static var paraLabel: String { "" }
     static func begin(env: Env) throws {}
     static func end(env: Env) throws {}
 }
@@ -69,11 +72,35 @@ extension LCDCmd where CmdRes == () {
     func cmd(env: Env) throws {}
 }
 
+protocol LCDExpand: LCDCmd {
+    associatedtype ParaType = ()
+    var paras: [ParaType] { get }
+    static var paraLabel: String { get }
+    mutating func one(para: ParaType, env: Env) throws -> CmdRes
+}
+
+extension LCDExpand { 
+    static var paraLabel: String { Self.Super.paraLabel }
+
+    mutating func cmd(env: Env) throws {
+        for (i, para) in self.paras.enumerated() { 
+            do {
+                if self.paras.count > 1 { print("正在处理任务 \(i + 1): \(Self.paraLabel) \(para) ...".info) }
+                let _ = try self.one(para: para, env: env)
+            } catch let err {
+                print(err)
+            }
+        }
+    }
+
+    mutating func one(para: ParaType, env: Env) throws {}
+}
+
 protocol List: LCDCmd {}
 extension List { static var name: String { "list" } }
-protocol Create: LCDCmd {}
-extension Create { static var name: String { "create" } }
-protocol Delete: LCDCmd {}
+protocol Delete: LCDExpand {}
 extension Delete { static var name: String { "delete" } }
-protocol Stop: LCDCmd {}
+protocol Stop: LCDExpand {}
 extension Stop { static var name: String { "stop" } }
+protocol Create: LCDExpand {}
+extension Create { static var name: String { "create" } }

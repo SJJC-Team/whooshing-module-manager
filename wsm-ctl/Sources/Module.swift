@@ -4,6 +4,7 @@ import Foundation
 struct Module: LCDS {
     
     static let name = "module"
+    static let paraLabel = "模块"
     
     struct L: List {
         typealias Super = Module
@@ -18,8 +19,9 @@ struct Module: LCDS {
     
     struct C: Create {
         typealias Super = Module
-        @Argument(help: "模块名称") var name: String
-        func cmd(env: Env) throws {
+        @Argument(help: "模块名称") var names: [String]
+        var paras: [String] { names }
+        func one(para name: String, env: Env) throws {
             try Sh.Vault.login(env: env)
             let dir = env.dataDir + "/" + name
             try Sh.Vault.newEngine(module: name, env: env)
@@ -30,11 +32,12 @@ struct Module: LCDS {
     
     struct D: Delete {
         typealias Super = Module
-        @Argument(help: "模块名称") var name: String
-        func cmd(env: Env) throws {
+        @Argument(help: "模块名称") var names: [String]
+        var paras: [String] { names }
+        func one(para name: String, env: Env) throws {
+            try paraAvailable(module: name, env: env)
             try Sh.Vault.login(env: env)
             let dir = env.dataDir + "/" + name
-            guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
             let dbs = try PgService.L.list(module: name,  env: env)
             guard dbs.count == 0 else { 
                 print("该模块还有以下 PostgreSQL 服务模块，请先删除:".warn)
@@ -48,8 +51,11 @@ struct Module: LCDS {
         }
     }
     
-    struct S: Stop {
-        typealias Super = Module
+    struct S: Stop { typealias Super = Module; var paras: [()] { [] } }
+
+    static func paraAvailable(module: String, env: Env) throws {
+        let dir = env.dataDir + "/" + module
+        guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
     }
     
     enum Err: String, ErrList {
