@@ -3,8 +3,10 @@ import Foundation
 
 struct PgService: LCDS {
     static let name = "pgservice"
+    static let shortName: String? = nil
     static let paraLabel = "端口"
-    static var subCmds: [any ParsableCommand.Type] { [L.self, C.self, D.self, S.self, Restart.self, Start.self] }
+    static let help = "PostgreSQL 服务"
+    static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self, S.self, Restart.self, Start.self]
 
     struct L: List {
         typealias Super = PgService
@@ -89,7 +91,9 @@ struct PgService: LCDS {
 
     struct Restart: LCDExpand {
         typealias Super = PgService
-        static var name: String { "restart" }
+        static let name: String = "restart"
+        static let shortName: String? = "resta"
+        static let help: String = "重启 "
 
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
@@ -103,7 +107,9 @@ struct PgService: LCDS {
 
     struct Start: LCDExpand {
         typealias Super = PgService
-        static var name: String { "start" }
+        static let name: String = "start"
+        static let shortName: String? = "sta"
+        static let help: String = "启动 "
 
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]

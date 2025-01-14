@@ -4,7 +4,10 @@ import Foundation
 struct Module: LCDS {
     
     static let name = "module"
+    static let shortName: String? = nil
     static let paraLabel = "模块"
+    static let help = "模块"
+    static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self]
     
     struct L: List {
         typealias Super = Module
@@ -51,7 +54,7 @@ struct Module: LCDS {
         }
     }
     
-    struct S: Stop { typealias Super = Module; var paras: [()] { [] } }
+    struct S: Stop { typealias Super = Module; var paras: [()] { [] }; }
 
     static func paraAvailable(module: String, env: Env) throws {
         let dir = env.dataDir + "/" + module
@@ -61,6 +64,5 @@ struct Module: LCDS {
     enum Err: String, ErrList {
         case moduleNotFound = "模块不存在"
         case pgServiceExist = "PostgreSQL 服务未删除"
-    }
-    
+    }   
 }

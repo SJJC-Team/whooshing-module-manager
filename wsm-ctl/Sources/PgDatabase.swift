@@ -4,8 +4,10 @@ import Foundation
 struct PgDatabase: LCDS {
 
     static let name = "pgdatabase"
+    static let shortName: String? = nil
     static let paraLabel = "数据库"
-    static var subCmds: [any ParsableCommand.Type] { [L.self, C.self, D.self] }
+    static let help = "PostgreSQL 数据库"
+    static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self]
     
     struct L: List {
         typealias Super = PgDatabase
