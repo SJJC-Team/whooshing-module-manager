@@ -30,7 +30,7 @@ struct PgService: LCDS {
         typealias Super = PgService
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .short, help: "PostgreSQL 将用于监听的端口号") var port: Int
+        @Option(name: .shortAndLong, help: "PostgreSQL 将用于监听的端口号") var port: Int
 
         func cmd(env: Env) throws {
             let moduleDir = env.dataDir + "/" + module
@@ -42,13 +42,12 @@ struct PgService: LCDS {
             guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.portOccupied.d(String(port)) }
             
             try Sh.Vault.login(env: env)
-            try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
-            try FS.setPermissions(path: dataDir, owner: "woo", group: "whooshing", permissions: 0o700, recursive: true)
-
             let keyPath = "\(module)/\(port)/role/woo"
             try Sh.Vault.newKey(in: keyPath, env: env)
             let key = try Sh.Vault.getKey(in: keyPath, env: env)
-            try Sh.PG.initS(module: module, port: port, key: key, env: env)
+            try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
+            try FS.setPermissions(path: dataDir, owner: "woo", group: "whooshing", permissions: 0o700, recursive: true)
+            try Sh.PG.create(module: module, port: port, key: key, env: env)
             try Sh.PG.restart(dataDir: dataDir, env: env)
         }
     }
@@ -57,7 +56,7 @@ struct PgService: LCDS {
         typealias Super = PgService
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .short, help: "PostgreSQL 服务的监听端口号") var port: Int
+        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
 
         func cmd(env: Env) throws {
             let moduleDir = env.dataDir + "/" + module
@@ -84,7 +83,7 @@ struct PgService: LCDS {
         typealias Super = PgService
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .short, help: "PostgreSQL 服务的监听端口号") var port: Int
+        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
 
         func cmd(env: Env) throws {
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
@@ -97,7 +96,7 @@ struct PgService: LCDS {
         static var name: String { "restart" }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .short, help: "PostgreSQL 服务的监听端口号") var port: Int
+        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
 
         func cmd(env: Env) throws {
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
@@ -110,7 +109,7 @@ struct PgService: LCDS {
         static var name: String { "start" }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .short, help: "PostgreSQL 服务的监听端口号") var port: Int
+        @Option(name: .shortAndLong, help: "PostgreSQL 服务的监听端口号") var port: Int
 
         func cmd(env: Env) throws {
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"

@@ -17,10 +17,13 @@ struct Sh {
             case vaultGetKey = "vault_get_key"
             case vaultDbBackup = "vault_db_backup"
             case vaultDeleteKey = "vault_delete_key"
-            case pgInitService = "pg_init_service"
+            case pgCreateService = "pg_create_service"
             case pgRestartService = "pg_restart_service"
             case pgStartService = "pg_start_service"
             case pgStopService = "pg_stop_service"
+            case pgListDb = "pg_list_db"
+            case pgCreateDb = "pg_create_db"
+            case pgDeleteDb = "pg_delete_db"
         }
 
         static func sh(_ shell: Shell) throws -> String {
@@ -125,10 +128,13 @@ struct Sh {
             case pgUnknowError = "PostgreSQL 未知错误"
             case pgRestartFailed = "PostgreSQL 重启失败"
             case pgStopFailed = "PostgreSQL 停止失败"
+            case pgCreateDbFailed = "PostgreSQL 数据库创建失败"
+            case pgDeleteDbFailed = "PostgreSQL 数据库删除失败"
+            case pgListDbFailed = "PostgreSQL 数据库列表获取失败"
         }
 
-        static func initS(module: String, port: Int, key: String, env: Env) throws {
-            let res = try run(in: File.sh(.pgInitService), paras: [
+        static func create(module: String, port: Int, key: String, env: Env) throws {
+            let res = try run(in: File.sh(.pgCreateService), paras: [
                 "module": module,
                 "port": String(port),
                 "key": key
@@ -155,14 +161,50 @@ struct Sh {
             guard res.code == 0 else { throw Err.pgStopFailed.d(String(data: res.res, encoding: .utf8)!) }
             print("PostgreSQL 服务 \(dataDir) 已停止".succ)
         }
+
+        struct Db {
+            static func create(module: String, port: Int, db: String, key: String, env: Env) throws {
+                let res = try run(in: File.sh(.pgCreateDb), paras: [
+                    "module": module,
+                    "port": String(port),
+                    "database": db,
+                    "key": key
+                ], env: env)
+                guard res.code == 0 else { throw Err.pgCreateDbFailed.d(String(data: res.res, encoding: .utf8)!) }
+                print("PostgreSQL 数据库 \(db) 创建成功".succ)
+            }
+
+            static func delete(port: Int, db: String, key: String, env: Env) throws {
+                let res = try run(in: File.sh(.pgDeleteDb), paras: [
+                    "port": String(port),
+                    "database": db,
+                    "key": key
+                ], env: env)
+                guard res.code == 0 else { throw Err.pgDeleteDbFailed.d(String(data: res.res, encoding: .utf8)!) }
+                print("PostgreSQL 数据库 \(db) 删除成功".succ)
+            }
+
+            static func list(port: Int, key: String, env: Env) throws -> [(oid: String, db: String)] {
+                let res = try run(in: File.sh(.pgListDb), paras: ["port": String(port), "key": key], env: env)
+                if (res.res.count == 0) { return [] }
+                guard res.code == 0 else { throw Err.pgListDbFailed.d(String(data: res.res, encoding: .utf8)!) }
+                guard let dbs = String(data: res.res, encoding: .utf8)?.components(separatedBy: "\n") else { throw Err.pgListDbFailed.d("PostgreSQL 数据库列表解包失败-\(port)") }
+                let dbList = try dbs.map {
+                    let r = $0.split(separator: "|"); 
+                    guard r.count == 2 else { throw Err.pgListDbFailed.d("PostgreSQL 数据库列表解构解构失败-\(port)") }
+                    return (oid: String(r[0]), db: String(r[1])) 
+                }
+                return dbList
+            }
+        }
     }
 
-    static func run(_ command: String, paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) {
+    static func run(_ arguments: [String], paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) {
         let task = Process()
         let pipe = Pipe()
         task.executableURL = URL(fileURLWithPath: "/bin/bash")
         task.environment = ProcessInfo.processInfo.environment.merging(env.envs) { (_, new) in new }.merging(paras) { (_, new) in new }
-        task.arguments = [command]
+        task.arguments = arguments
         task.standardOutput = pipe
         task.standardError = pipe
         do { try task.run() } catch let err { throw Err.shellExecuteFailed.d(err.localizedDescription) }
@@ -171,7 +213,9 @@ struct Sh {
         return (task.terminationStatus, data)
     }
     
-    static func run(in path: String, paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) { try run(path, paras: paras, env:env) }
+    static func run(_ command: String, paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) { try run(["-c", command], paras: paras, env: env) }
+
+    static func run(in path: String, paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) { try run([path], paras: paras, env:env) }
 }
 
 struct FS {
