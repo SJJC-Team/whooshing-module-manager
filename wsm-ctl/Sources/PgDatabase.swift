@@ -2,7 +2,6 @@ import ArgumentParser
 import Foundation
 
 struct PgDatabase: LCDS {
-
     static let name = "pgdatabase"
     static let shortName: String? = nil
     static let paraLabel = "数据库"

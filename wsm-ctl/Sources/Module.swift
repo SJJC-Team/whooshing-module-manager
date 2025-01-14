@@ -2,7 +2,6 @@ import ArgumentParser
 import Foundation
 
 struct Module: LCDS {
-    
     static let name = "module"
     static let shortName: String? = nil
     static let paraLabel = "模块"
