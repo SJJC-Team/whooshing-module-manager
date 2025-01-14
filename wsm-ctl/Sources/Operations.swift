@@ -163,6 +163,9 @@ struct Sh {
         }
 
         struct Db {
+            
+            typealias DataType = (oid: String, db: String)
+
             static func create(module: String, port: Int, db: String, key: String, env: Env) throws {
                 let res = try run(in: File.sh(.pgCreateDb), paras: [
                     "module": module,
@@ -184,7 +187,7 @@ struct Sh {
                 print("PostgreSQL 数据库 \(db) 删除成功".succ)
             }
 
-            static func list(port: Int, key: String, env: Env) throws -> [(oid: String, db: String)] {
+            static func list(port: Int, key: String, env: Env) throws -> [DataType] {
                 let res = try run(in: File.sh(.pgListDb), paras: ["port": String(port), "key": key], env: env)
                 if (res.res.count == 0) { return [] }
                 guard res.code == 0 else { throw Err.pgListDbFailed.d(String(data: res.res, encoding: .utf8)!) }

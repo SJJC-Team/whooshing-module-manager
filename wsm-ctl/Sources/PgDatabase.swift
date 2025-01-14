@@ -12,7 +12,7 @@ struct PgDatabase: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, help: "PostgreSQL 将用于监听的端口号") var port: Int
         
-        func cmd(env: Env) throws -> () {
+        func cmd(env: Env) throws -> [Sh.PG.Db.DataType] {
             let moduleDir = env.dataDir + "/" + module
             let dataDir = "\(moduleDir)/percona/\(port)"
             guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
@@ -20,10 +20,15 @@ struct PgDatabase: LCDS {
             guard FS.isExist(path: dataDir, dir: true) == true else { throw Err.serviceNotExist.d(dataDir) }
             guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Err.serviceNotRunning.d(String(port)) }
 
-            let key = try Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)
-            let res = try Sh.PG.Db.list(port: port, key: key, env: env)
+            let res = try Self.list(module: module, port: port, env: env)
             if res.isEmpty { print("无数据库".info) }
             else { for db in res { print("\(db.db)(\(db.oid))".info) } }
+            return res
+        }
+
+        static func list(module: String, port: Int, env: Env) throws -> [Sh.PG.Db.DataType] {
+            let key = try Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)
+            return try Sh.PG.Db.list(port: port, key: key, env: env)
         }
     }
     
@@ -66,7 +71,6 @@ struct PgDatabase: LCDS {
             try Sh.PG.Db.delete(port: port, db: database, key: key, env: env)
             try Sh.Vault.deleteKey(in: "\(module)/\(port)/tde/\(database)_1", env: env)
         }
-
     }
     
     struct S: Stop { typealias Super = PgDatabase }

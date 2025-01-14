@@ -68,7 +68,12 @@ struct PgService: LCDS {
 
             let backupName = Tool.bakName(name: String(port))
 
-            // todo: 数据库处理？
+            let dbs = try PgDatabase.L.list(module: module, port: port, env: env)
+            guard dbs.count == 0 else {
+                print("该模块还有以下 PostgreSQL 数据库，请先删除:".warn)
+                for db in dbs { print("\(db.db)(\(db.oid))".info) }
+                throw Err.pgDatabaseExist
+            }
 
             try Sh.Vault.dbBackup(module: module, port: port, backupName: backupName, env: env)
             try Sh.Vault.deleteKey(in: "\(module)/\(port)", env: env)
@@ -76,7 +81,6 @@ struct PgService: LCDS {
             try FS.mkdir(path: perconaDir + "/.trash", slience: true, withIntermediates: true)
             try FS.mv(path: dataDir, to: perconaDir + "/.trash/" + backupName)
         }
-
     }
     
     struct S: Stop {
@@ -121,6 +125,7 @@ struct PgService: LCDS {
         case moduleNotFound = "模块不存在"
         case portOccupied = "端口被占用"
         case portNotCorrect = "端口号不正确, 请在 1024 ~ 65535 之间"
+        case pgDatabaseExist = "PostgreSQL 数据库未删除"
         case serviceAlreadyExist = "PostgreSQL 服务已存在"
     }
 
