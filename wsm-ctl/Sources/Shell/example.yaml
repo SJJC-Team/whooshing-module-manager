@@ -1,0 +1,24 @@
+---
+testing1:
+    domain: "testing1"
+    pgsql:
+        "default":
+            database: "testing"
+            port: 0
+        "pg2":
+            database: "testing2"
+            port: 10
+    api:
+        "default":
+            port: 1
+            pgdatabases: ["default", "pg2"]
+            domain: "api"
+    inline:
+        "default":
+            port: 2
+            pgdatabases: ["default", "pg2"]
+    https:
+        "test":
+            port: 3
+            pgdatabases: ["default"]
+            domain: "web"
