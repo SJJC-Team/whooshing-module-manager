@@ -33,6 +33,7 @@ where
     static var shortName: String? { get }
     static var paraLabel: String { get }
     static var help: String { get }
+    static var reverseCmd: Bool { get }
     static var subCmds: [ParsableCommand.Type] { get }
     associatedtype L: List
     associatedtype C: Create
@@ -57,14 +58,15 @@ extension LCDS {
     static var subCmds: [ParsableCommand.Type] { [L.self, C.self, D.self, S.self] }
     static var paraLabel: String { "" }
     static var help: String { "" }
+    static var reverseCmd: Bool { false }
     static func begin(env: Env) throws {}
     static func end(env: Env) throws {}
 }
 
 extension LCDCmd {
     static var shortName: String? { String(Self.name.prefix(1)) }
-    static var cmdName: String { Self.name + "-" + Super.name }
-    static var cmdShortName: String? { (Self.shortName != nil && Super.shortName != nil) ?  Self.shortName! + "-" + Super.shortName! : nil }
+    static var cmdName: String { Self.Super.reverseCmd == false ? Self.name + "-" + Super.name : Super.name + "-" + Self.name }
+    static var cmdShortName: String? { (Self.shortName != nil && Super.shortName != nil) ?  (Self.Super.reverseCmd == false ? Self.shortName! + "-" + Super.shortName! : Super.shortName! + "-" + Self.shortName!) : nil }
     static var help: String { "" }
     static var configuration: CommandConfiguration { Self.cmdShortName != nil ? .init(commandName: Self.cmdShortName!, abstract: Self.help + Super.help, aliases: [Self.cmdName]) : .init(commandName: Self.cmdName, abstract: Self.help + Super.help) }
     

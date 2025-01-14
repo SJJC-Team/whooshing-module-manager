@@ -30,7 +30,6 @@ struct PgService: LCDS {
     
     struct C: Create {
         typealias Super = PgService
-
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 将用于监听的端口号") var ports: [Int]
         var paras: [Int] { ports }
