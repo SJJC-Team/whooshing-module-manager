@@ -12,7 +12,7 @@ extension Yaml.PGSQL {
 
 extension Yaml.API {
     func create() throws {
-        
+
     }
 }
 
