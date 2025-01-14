@@ -7,9 +7,8 @@ struct Yaml {
     }
     private init(_ tops: [Top]) { self.tops = tops }
     func create() throws {
-        for top in tops { try top.create() }
+        for top in tops { try top.create(env: Env()) }
         print("Yaml 配置创建成功".succ)
-        
     }
 }
 
@@ -27,7 +26,6 @@ extension Yaml {
         static func parse(data: [String: Any], name: String, keyPath: String) throws -> Self
         init(data: [String: Any], name: String)
         init()
-        func create() throws
     }
 
     struct MODULE: DataTemplate {
