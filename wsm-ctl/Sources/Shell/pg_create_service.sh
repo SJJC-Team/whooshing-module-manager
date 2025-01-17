@@ -11,6 +11,9 @@ data_dir="$WHOOSHING_DATA_DIR/$module/percona/$port"
 
 export PATH=/usr/lib/postgresql/17/bin:$PATH
 conf_file="$data_dir/postgresql.conf"
+sudo mkdir -p /var/run/postgresql
+chown -R root:whooshing /var/run/postgresql
+chmod -R 770 /var/run/postgresql
 
 # 初始化数据库
 echo -e "${b}初始化数据库...${n}"

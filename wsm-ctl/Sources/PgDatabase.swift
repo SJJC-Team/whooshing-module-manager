@@ -12,7 +12,7 @@ struct PgDatabase: LCDS {
         typealias Super = PgDatabase
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, help: "PostgreSQL 将用于监听的端口号") var port: Int
-        func cmd(env: Env) throws -> [Sh.PG.Db.DataType] {
+        func cmd(env: Env, depends: Depends) throws -> [Sh.PG.Db.DataType] {
             try PgService.Action.paraAvailable(module: module, port: port, env: env)
             guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Action.Err.serviceNotRunning.d(String(port)) }
             let res = try Action.list(module: module, port: port, env: env)

@@ -11,7 +11,7 @@ struct PgService: LCDS {
     struct L: List {
         typealias Super = PgService
         @Argument(help: "模块名称") var module: String
-        func cmd(env: Env) throws -> [String] { 
+        func cmd(env: Env, depends: Depends) throws -> [String] { 
             try Module.Action.paraAvailable(module: module, env: env)
             let dirs = try Action.list(module: module, env: env) 
             let isEmpty = dirs.isEmpty

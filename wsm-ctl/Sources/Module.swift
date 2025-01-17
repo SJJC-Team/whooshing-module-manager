@@ -10,7 +10,7 @@ struct Module: LCDS {
     
     struct L: List {
         typealias Super = Module
-        func cmd(env: Env) throws -> [String] { try Module.Action.list(env: env) }
+        func cmd(env: Env, depends: Depends) throws -> [String] { try Module.Action.list(env: env) }
     }
     
     struct C: Create {

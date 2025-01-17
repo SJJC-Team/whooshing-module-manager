@@ -80,7 +80,7 @@ extension LCDCmd {
 }
 
 extension LCDCmd where CmdRes == () {
-    func cmd(env: Env, depends: Depends) throws {}
+    mutating func cmd(env: Env, depends: Depends) throws { }
 }
 
 protocol LCDExpand: LCDCmd {
@@ -105,8 +105,8 @@ extension LCDExpand {
         }
     }
 
-    mutating func one(para: ParaType, env: Env, depends: Depends) throws { return try one(para: para, env: env) }
-    mutating func one(para: ParaType, env: Env) throws {}
+    mutating func one(para: ParaType, env: Env, depends: Depends) throws -> CmdRes { return try one(para: para, env: env) }
+    mutating func one(para: ParaType, env: Env) throws { }
 }
 
 protocol List: LCDCmd {}
