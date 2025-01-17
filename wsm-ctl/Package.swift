@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "wsm-ctl",
+    name: "wsm",
     platforms: [
        .macOS(.v11)
     ],

@@ -19,7 +19,7 @@ struct Depends {
     let db: PostgresDatabase
 
     init(env: Env) throws {
-        self.db = try Database.initializeIfNeed(env: env)
+        self.db = try DatabaseDepends.initializeIfNeed(env: env)
     }
 }
 

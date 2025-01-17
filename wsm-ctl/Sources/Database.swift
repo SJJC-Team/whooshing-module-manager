@@ -1,7 +1,7 @@
 import Fluent
 import FluentPostgresDriver
 
-struct Database {
+struct DatabaseDepends {
 
     static let port = 20001
     static let moduleName = ".manager"
@@ -29,19 +29,29 @@ struct Database {
         )
 
         let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+        let eventLoop = eventLoopGroup.next()
         let db = Databases(threadPool: NIOThreadPool(numberOfThreads: 1), on: eventLoopGroup)
-        db.use(.postgres(configuration: configuration), as: .psql)
 
         defer {
             db.shutdown()
             try? eventLoopGroup.syncShutdownGracefully()
         }
 
-        guard let db = db.database(.psql, logger: .init(label: "woo.manager.log"), on: eventLoopGroup.next()) as? PostgresDatabase else { throw Err.dbInitFailed.d("未能成功获取 PostgreSQL 数据库实例") }
+        db.use(.postgres(configuration: configuration), as: .psql)
+        guard let db = db.database(.psql, logger: .init(label: "woo.manager.log"), on: eventLoop) else { throw Err.dbInitFailed.d("未能成功获取数据库实例") }
+
+        let migrations = Migrations()
+        migrations.add(DBModel.Module.MIG())
+
+        let migrator = Migrator(databaseFactory: { _ in db }, migrations: migrations, on: eventLoop, migrationLogLevel: .debug)
+        try migrator.setupIfNeeded().flatMap { migrator.prepareBatch() }.wait()
+        
+        guard let db = db as? PostgresDatabase else { throw Err.dbInitFailed.d("未能成功获取 PostgreSQL 数据库实例") }
         return db
     }
 
     enum Err: String, ErrList {
         case dbInitFailed = "数据库初始化失败"
+        case dbMigrationFailed = "数据库迁移失败"
     }
 }

@@ -1,5 +1,5 @@
 {
-  "originHash" : "30bdbec8aed20c68c7e796d98208e47988293aaaf04c5fad53b9c1d8c0b53c15",
+  "originHash" : "992f7c17154159df8db364d402f543f454f2d1207d02c55f1dfc6037101d51db",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -42,8 +42,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/fluent-kit.git",
       "state" : {
-        "revision" : "614d3ec27cdef50cfb9fc3cfd382b6a4d9578cff",
-        "version" : "1.49.0"
+        "revision" : "260eff94b64bed4920fa0a1a61ad42c1003fde6a",
+        "version" : "1.50.0"
       }
     },
     {
@@ -213,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "27c839f4700069928196cd0e9fa03b22f297078a",
-        "version" : "2.78.0"
+        "revision" : "ba72f31e11275fc5bf060c966cf6c1f36842a291",
+        "version" : "2.79.0"
       }
     },
     {
@@ -313,7 +313,7 @@
       "location" : "https://github.com/SJJC-Team/whooshing.toolbox-basic.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "f51f30feb67beaa380e91ef7362010be6bbd9fef"
+        "revision" : "19233eb03e4fc201b1d97407866824e22ab9a2db"
       }
     },
     {
