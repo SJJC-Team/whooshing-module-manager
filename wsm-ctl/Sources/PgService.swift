@@ -100,20 +100,11 @@ extension PgService {
         }
 
         static func create(module: String, port: Int, env: Env) throws {
-            try noCheckingCreate(module: module, port: port, env: env)
+            try NoCheck.create(module: module, port: port, env: env)
         }
 
         static func delete(module: String, port: Int, env: Env) throws {
-            try paraAvailable(module: module, port: port, env: env)
-            let perconaDir =  env.dataDir + "/" + module + "/percona"
-            let dataDir = "\(perconaDir)/\(port)"
-            guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.serviceIsRunning.d("\(port), 您不能删除正在运行的服务") }
-            let backupName = Tool.bakName(name: String(port))
-            try Sh.Vault.dbBackup(module: module, port: port, backupName: backupName, env: env)
-            try Sh.Vault.deleteKey(in: "\(module)/\(port)", env: env)
-            try? Sh.PG.stop(dataDir: dataDir, env: env)
-            try FS.mkdir(path: perconaDir + "/.trash", slience: true, withIntermediates: true)
-            try FS.mv(path: dataDir, to: perconaDir + "/.trash/" + backupName)
+            try NoCheck.delete(module: module, port: port, env: env)
         }
 
         static func stop(module: String, port: Int, env: Env) throws {
@@ -124,7 +115,7 @@ extension PgService {
         }
 
         static func restart(module: String, port: Int, env: Env) throws {
-            try noCheckingrestart(module: module, port: port, env: env)
+            try NoCheck.restart(module: module, port: port, env: env)
         }
 
         static func start(module: String, port: Int, env: Env) throws {
@@ -134,30 +125,53 @@ extension PgService {
             try Sh.PG.start(dataDir: dataDir, env: env)
         }
 
-        static func noCheckingCreate(module: String, port: Int, env: Env) throws {
-            try Module.Action.paraAvailable(module: module, env: env)
+        struct NoCheck {
+            static func create(module: String, port: Int, env: Env) throws {
+                try Module.Action.paraAvailable(module: module, env: env)
 
-            let moduleDir = "\(env.dataDir)/\(module)"
-            let dataDir = "\(moduleDir)/percona/\(port)"
+                let moduleDir = "\(env.dataDir)/\(module)"
+                let dataDir = "\(moduleDir)/percona/\(port)"
 
-            guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
-            guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
-            guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.portOccupied.d(String(port)) }
-            
-            try Sh.Vault.login(env: env)
-            let keyPath = "\(module)/\(port)/role/woo"
-            try Sh.Vault.newKey(in: keyPath, env: env)
-            let key = try Sh.Vault.getKey(in: keyPath, env: env)
-            try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
-            try FS.setPermissions(path: dataDir, owner: "woo", group: "whooshing", permissions: 0o700, recursive: true)
-            try Sh.PG.create(module: module, port: port, key: key, env: env)
-            try Sh.PG.restart(dataDir: dataDir, env: env)
+                guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
+                guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
+                guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.portOccupied.d(String(port)) }
+                
+                try Sh.Vault.login(env: env)
+                let keyPath = "\(module)/\(port)/role/woo"
+
+                do {
+                    try Sh.Vault.newKey(in: keyPath, env: env)
+                    let key = try Sh.Vault.getKey(in: keyPath, env: env)
+                    try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
+                    try FS.setPermissions(path: dataDir, owner: "woo", group: "whooshing", permissions: 0o700, recursive: true)
+                    try Sh.PG.create(module: module, port: port, key: key, env: env)
+                    try Sh.PG.restart(dataDir: dataDir, env: env)
+                } catch let err {
+                    print("任务失败，正在回退")
+                    try delete(module: module, port: port, env: env)
+                    throw err
+                }
+            }
+
+            static func delete(module: String, port: Int, env: Env) throws {
+                try paraAvailable(module: module, port: port, env: env)
+                let perconaDir =  env.dataDir + "/" + module + "/percona"
+                let dataDir = "\(perconaDir)/\(port)"
+                guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.serviceIsRunning.d("\(port), 您不能删除正在运行的服务") }
+                let backupName = Tool.bakName(name: String(port))
+                try Sh.Vault.dbBackup(module: module, port: port, backupName: backupName, env: env)
+                try Sh.Vault.deleteKey(in: "\(module)/\(port)", env: env)
+                try? Sh.PG.stop(dataDir: dataDir, env: env)
+                try FS.mkdir(path: perconaDir + "/.trash", slience: true, withIntermediates: true)
+                try FS.mv(path: dataDir, to: perconaDir + "/.trash/" + backupName)
+            }
+
+            static func restart(module: String, port: Int, env: Env) throws {
+                try paraAvailable(module: module, port: port, env: env)
+                let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
+                try Sh.PG.restart(dataDir: dataDir, env: env)
+            }
         }
 
-        static func noCheckingrestart(module: String, port: Int, env: Env) throws {
-            try paraAvailable(module: module, port: port, env: env)
-            let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
-            try Sh.PG.restart(dataDir: dataDir, env: env)
-        }
     }
 }

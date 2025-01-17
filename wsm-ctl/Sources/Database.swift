@@ -12,11 +12,11 @@ struct Database {
         let moduleDir = "\(env.dataDir)/\(moduleName)"
         let dataDir = "\(moduleDir)/percona/\(port)"
 
-        if FS.isExist(path: moduleDir, dir: true) == false { try Module.Action.noCheckingCreate(name: moduleName, env: env) }
-        if FS.isExist(path: dataDir, dir: true) == false { try PgService.Action.noCheckingCreate(module: moduleName, port: port, env: env) }
-        if try Sh.isServing(port: port) == false { try PgService.Action.noCheckingCreate(module: moduleName, port: port, env: env) }
-        if try PgDatabase.Action.list(module: moduleName, port: port, env: env).first(where: { $0.db == Self.database }) == nil { try PgDatabase.Action.noCheckingCreate(module: moduleName, port: port, database: database, env: env) }
-
+        if FS.isExist(path: moduleDir, dir: true) == false { try Module.Action.NoCheck.create(name: moduleName, env: env) }
+        if FS.isExist(path: dataDir, dir: true) == false { try PgService.Action.NoCheck.create(module: moduleName, port: port, env: env) }
+        if try Sh.isServing(port: port) == false { try PgService.Action.NoCheck.restart(module: moduleName, port: port, env: env) }
+        if try PgDatabase.Action.list(module: moduleName, port: port, env: env).first(where: { $0.db == Self.database }) == nil { try PgDatabase.Action.NoCheck.create(module: moduleName, port: port, database: database, env: env) }
+        
         let password = try Sh.Vault.getKey(in: "\(moduleName)/\(port)/role/woo", env: env)
 
         let configuration = SQLPostgresConfiguration(

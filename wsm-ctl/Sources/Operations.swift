@@ -36,6 +36,7 @@ struct Sh {
     struct Vault {
 
         enum Err: String, ErrList {
+            case vaultNotRunning = "Vault 未运行"
             case vaultEngineExist = "Vault 引擎已存在"
             case vaultNewEngineFailed = "新建 Vault 引擎失败"
             case vaultLoginFailed = "Vault 登陆失败"
@@ -47,12 +48,13 @@ struct Sh {
             case vaultUnknowError = "Vault 未知错误"
         }
 
-        static func login(env: Env) throws {
+        static func login(env: Env, silent: Bool = false) throws {
             let res = try run(in: File.sh(.vaultLogin), env: env)
             switch res.code {
-                case 1: throw Err.vaultIsSealed
+                case 1: throw Err.vaultNotRunning
                 case 2: throw Err.vaultLoginFailed
-                case 0: print("成功登陆到 Vault".succ)
+                case 3: throw Err.vaultIsSealed
+                case 0: if !silent { print("成功登陆到 Vault".succ) } 
                 default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
             }
         }

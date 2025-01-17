@@ -51,31 +51,43 @@ extension Module {
         }
 
         static func create(name: String, env: Env) throws {
-            try noCheckingCreate(name: name, env: env)
+            try NoCheck.create(name: name, env: env)
         }
 
         static func delete(name: String, env: Env) throws {
-            try paraAvailable(module: name, env: env)
-            try Sh.Vault.login(env: env)
-            let dir = env.dataDir + "/" + name
-            let dbs = try PgService.Action.list(module: name,  env: env)
-            guard dbs.count == 0 else { 
-                print("该模块还有以下 PostgreSQL 服务模块，请先删除:".warn)
-                for db in dbs { print(db.info) }
-                throw Err.pgServiceExist 
-            }
-            let backupName = Tool.bakName(name: name)
-            try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
-            try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)
-            try FS.mv(path: dir, to: env.dataDir + "/.trash/" + backupName)
+            try NoCheck.delete(name: name, env: env)
         }
+        
+        enum NoCheck {
+            static func create(name: String, env: Env) throws {
+                try Sh.Vault.login(env: env)
+                let dir = env.dataDir + "/" + name
+                do {
+                    try Sh.Vault.newEngine(module: name, env: env)
+                    try FS.mkdir(path: dir, slience: true, withIntermediates: true)
+                    try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
+                } catch let err {
+                    print("任务失败，正在回退".err)
+                    try delete(name: name, env: env)
+                    throw err
+                }
+            }
 
-        static func noCheckingCreate(name: String, env: Env) throws {
-            try Sh.Vault.login(env: env)
-            let dir = env.dataDir + "/" + name
-            try Sh.Vault.newEngine(module: name, env: env)
-            try FS.mkdir(path: dir, slience: true, withIntermediates: true)
-            try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
+            static func delete(name: String, env: Env) throws {
+                try paraAvailable(module: name, env: env)
+                try Sh.Vault.login(env: env)
+                let dir = env.dataDir + "/" + name
+                let dbs = try PgService.Action.list(module: name,  env: env)
+                guard dbs.count == 0 else { 
+                    print("该模块还有以下 PostgreSQL 服务模块，请先删除:".warn)
+                    for db in dbs { print(db.info) }
+                    throw Err.pgServiceExist 
+                }
+                let backupName = Tool.bakName(name: name)
+                try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
+                try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)
+                try FS.mv(path: dir, to: env.dataDir + "/.trash/" + backupName)
+            }
         }
     }
 }
