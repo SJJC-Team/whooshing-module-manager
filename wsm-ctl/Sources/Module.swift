@@ -51,11 +51,7 @@ extension Module {
         }
 
         static func create(name: String, env: Env) throws {
-            try Sh.Vault.login(env: env)
-            let dir = env.dataDir + "/" + name
-            try Sh.Vault.newEngine(module: name, env: env)
-            try FS.mkdir(path: dir, slience: true, withIntermediates: true)
-            try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
+            try noCheckingCreate(name: name, env: env)
         }
 
         static func delete(name: String, env: Env) throws {
@@ -72,6 +68,14 @@ extension Module {
             try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
             try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)
             try FS.mv(path: dir, to: env.dataDir + "/.trash/" + backupName)
+        }
+
+        static func noCheckingCreate(name: String, env: Env) throws {
+            try Sh.Vault.login(env: env)
+            let dir = env.dataDir + "/" + name
+            try Sh.Vault.newEngine(module: name, env: env)
+            try FS.mkdir(path: dir, slience: true, withIntermediates: true)
+            try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
         }
     }
 }

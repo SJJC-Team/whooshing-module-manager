@@ -1,6 +1,7 @@
 import ArgumentParser
 import Foundation
 import SwiftDotenv
+import FluentPostgresDriver
 
 @main
 struct WSM: ParsableCommand {
@@ -12,6 +13,14 @@ struct WSM: ParsableCommand {
             .init(name: PgDatabase.help + "管理", subcommands: PgDatabase.subCmds)
         ], defaultSubcommand: Config.C.self
     )
+}
+
+struct Depends {
+    let db: PostgresDatabase
+
+    init(env: Env) throws {
+        self.db = try Database.initializeIfNeed(env: env)
+    }
 }
 
 struct Env {

@@ -217,6 +217,12 @@ struct Sh {
         }
     }
 
+    static func isServing(port: Int) throws -> Bool {
+        let res = try run("lsof -i :\(port)", env: Env())
+        guard res.code == 0 else { throw Err.shellExecuteFailed.d("检查端口失败") }
+        return res.res.count > 0
+    }
+
     static func run(_ arguments: [String], paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) {
         let task = Process()
         let pipe = Pipe()

@@ -40,8 +40,8 @@ where
     associatedtype D: Delete
     associatedtype S: Stop
     
-    static func begin(env: Env) throws
-    static func end(env: Env) throws
+    static func begin(env: Env, depends: Depends) throws
+    static func end(env: Env, depends: Depends) throws
 }
 
 protocol LCDCmd: ParsableCommand {
@@ -50,7 +50,7 @@ protocol LCDCmd: ParsableCommand {
     static var name: String { get }
     static var shortName: String? { get }
     static var help: String { get }
-    mutating func cmd(env: Env) throws -> CmdRes
+    mutating func cmd(env: Env, depends: Depends) throws -> CmdRes
 }
 
 extension LCDS {
@@ -59,8 +59,8 @@ extension LCDS {
     static var paraLabel: String { "" }
     static var help: String { "" }
     static var reverseCmd: Bool { false }
-    static func begin(env: Env) throws {}
-    static func end(env: Env) throws {}
+    static func begin(env: Env, depends: Depends) throws {}
+    static func end(env: Env, depends: Depends) throws {}
 }
 
 extension LCDCmd {
@@ -72,14 +72,15 @@ extension LCDCmd {
     
     mutating func run() throws {
         let env = try Env()
-        try Self.Super.begin(env: env)
-        let _ = try self.cmd(env: env)
-        try Self.Super.end(env: env)
+        let depends = try Depends(env: env)
+        try Self.Super.begin(env: env, depends: depends)
+        let _ = try self.cmd(env: env, depends: depends)
+        try Self.Super.end(env: env, depends: depends)
     }
 }
 
 extension LCDCmd where CmdRes == () {
-    func cmd(env: Env) throws {}
+    func cmd(env: Env, depends: Depends) throws {}
 }
 
 protocol LCDExpand: LCDCmd {
@@ -87,22 +88,24 @@ protocol LCDExpand: LCDCmd {
     var paras: [ParaType] { get }
     static var paraLabel: String { get }
     mutating func one(para: ParaType, env: Env) throws -> CmdRes
+    mutating func one(para: ParaType, env: Env, depends: Depends) throws -> CmdRes
 }
 
 extension LCDExpand { 
     static var paraLabel: String { Self.Super.paraLabel }
 
-    mutating func cmd(env: Env) throws {
+    mutating func cmd(env: Env, depends: Depends) throws {
         for (i, para) in self.paras.enumerated() { 
             do {
                 if self.paras.count > 1 { print("正在处理任务 \(i + 1): \(Self.paraLabel) \(para) ...".info) }
-                let _ = try self.one(para: para, env: env)
+                let _ = try self.one(para: para, env: env, depends: depends)
             } catch let err {
                 print(err)
             }
         }
     }
 
+    mutating func one(para: ParaType, env: Env, depends: Depends) throws { return try one(para: para, env: env) }
     mutating func one(para: ParaType, env: Env) throws {}
 }
 

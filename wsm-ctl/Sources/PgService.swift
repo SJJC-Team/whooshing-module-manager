@@ -100,23 +100,7 @@ extension PgService {
         }
 
         static func create(module: String, port: Int, env: Env) throws {
-            try Module.Action.paraAvailable(module: module, env: env)
-
-            let moduleDir = "\(env.dataDir)/\(module)"
-            let dataDir = "\(moduleDir)/percona/\(port)"
-
-            guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
-            guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
-            guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.portOccupied.d(String(port)) }
-            
-            try Sh.Vault.login(env: env)
-            let keyPath = "\(module)/\(port)/role/woo"
-            try Sh.Vault.newKey(in: keyPath, env: env)
-            let key = try Sh.Vault.getKey(in: keyPath, env: env)
-            try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
-            try FS.setPermissions(path: dataDir, owner: "woo", group: "whooshing", permissions: 0o700, recursive: true)
-            try Sh.PG.create(module: module, port: port, key: key, env: env)
-            try Sh.PG.restart(dataDir: dataDir, env: env)
+            try noCheckingCreate(module: module, port: port, env: env)
         }
 
         static func delete(module: String, port: Int, env: Env) throws {
@@ -140,9 +124,7 @@ extension PgService {
         }
 
         static func restart(module: String, port: Int, env: Env) throws {
-            try paraAvailable(module: module, port: port, env: env)
-            let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
-            try Sh.PG.restart(dataDir: dataDir, env: env)
+            try noCheckingrestart(module: module, port: port, env: env)
         }
 
         static func start(module: String, port: Int, env: Env) throws {
@@ -150,6 +132,32 @@ extension PgService {
             guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.serviceIsRunning.d(String(port)) }
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
             try Sh.PG.start(dataDir: dataDir, env: env)
+        }
+
+        static func noCheckingCreate(module: String, port: Int, env: Env) throws {
+            try Module.Action.paraAvailable(module: module, env: env)
+
+            let moduleDir = "\(env.dataDir)/\(module)"
+            let dataDir = "\(moduleDir)/percona/\(port)"
+
+            guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
+            guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
+            guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.portOccupied.d(String(port)) }
+            
+            try Sh.Vault.login(env: env)
+            let keyPath = "\(module)/\(port)/role/woo"
+            try Sh.Vault.newKey(in: keyPath, env: env)
+            let key = try Sh.Vault.getKey(in: keyPath, env: env)
+            try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
+            try FS.setPermissions(path: dataDir, owner: "woo", group: "whooshing", permissions: 0o700, recursive: true)
+            try Sh.PG.create(module: module, port: port, key: key, env: env)
+            try Sh.PG.restart(dataDir: dataDir, env: env)
+        }
+
+        static func noCheckingrestart(module: String, port: Int, env: Env) throws {
+            try paraAvailable(module: module, port: port, env: env)
+            let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
+            try Sh.PG.restart(dataDir: dataDir, env: env)
         }
     }
 }

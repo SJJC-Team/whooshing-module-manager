@@ -66,18 +66,22 @@ extension PgDatabase {
         }
 
         static func create(module: String, port: Int, database: String, env: Env) throws {
-            try PgService.Action.paraAvailable(module: module, port: port, env: env)
-            guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Err.serviceNotRunning.d(String(port)) }
-            try Sh.Vault.login(env: env)
-            let key = try Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)
-            guard try Sh.PG.Db.test(port: port, database: database, key: key, env: env) == false else { throw Err.dbAlreadyExist.d("\(module)/\(port)/\(database)") }
-            try Sh.PG.Db.create(module: module, port: port, db: database, key: key, env: env)
+            try noCheckingCreate(module: module, port: port, database: database, env: env)
         }
 
         static func delete(module: String, port: Int, database: String, env: Env) throws {
             let key = try paraAvailable(module: module, port: port, database: database, env: env)
             try Sh.PG.Db.delete(port: port, db: database, key: key, env: env)
             try Sh.Vault.deleteKey(in: "\(module)/\(port)/tde/\(database)_1", env: env)
+        }
+
+        static func noCheckingCreate(module: String, port: Int, database: String, env: Env) throws {
+            try PgService.Action.paraAvailable(module: module, port: port, env: env)
+            guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Err.serviceNotRunning.d(String(port)) }
+            try Sh.Vault.login(env: env)
+            let key = try Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)
+            guard try Sh.PG.Db.test(port: port, database: database, key: key, env: env) == false else { throw Err.dbAlreadyExist.d("\(module)/\(port)/\(database)") }
+            try Sh.PG.Db.create(module: module, port: port, db: database, key: key, env: env)
         }
     }
 }
