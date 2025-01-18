@@ -113,8 +113,6 @@ extension ApiService {
             guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
             guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
             guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.portOccupied.d(String(port)) }
-
-            try Sh.Vault.login(env: env)
     
             do {
                 try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
@@ -142,6 +140,10 @@ extension ApiService {
         static func restart(module: String, port: Int, env: Env) throws {
             try paraAvailable(module: module, port: port, env: env)
             let dataDir = "\(env.dataDir)/\(module)/api-\(port)"
+
+
+
+            
             try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", env: env)
         }
 
@@ -149,6 +151,9 @@ extension ApiService {
             try paraAvailable(module: module, port: port, env: env)
             guard !(try Sh.isServing(port: port)) else { throw Err.serviceIsRunning.d(String(port)) }
             let dataDir = "\(env.dataDir)/\(module)/api-\(port)"
+
+            
+
             try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", env: env)
         }
 

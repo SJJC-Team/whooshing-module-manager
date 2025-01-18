@@ -227,8 +227,16 @@ struct Sh {
             case pm2RestartFailed = "PM2 重启失败"
         }
 
-        static func start(configFile: String, env: Env) throws {
-            let res = try run("pm2 start \(configFile)", env: env)
+        static func restart(configFile: String, args: [String: String], env: Env) throws {
+            let argStr = args.map { "\($0)=\($1)" }
+            let res = try run(["-c"] + argStr + ["pm2 restart \(configFile)"], env: env)
+            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 重启服务成功".succ)
+        }
+
+        static func start(configFile: String, args: [String: String], env: Env) throws {
+            let argStr = args.map { "\($0)=\($1)" }
+            let res = try run(["-c"] + argStr + ["pm2 start \(configFile)"], env: env)
             guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
             print("PM2 启动服务成功".succ)
         }
@@ -237,12 +245,6 @@ struct Sh {
             let res = try run("pm2 stop \(configFile)", env: env)
             guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
             print("PM2 停止服务成功".succ)
-        }
-
-        static func restart(configFile: String, env: Env) throws {
-            let res = try run("pm2 restart \(configFile)", env: env)
-            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
-            print("PM2 重启服务成功".succ)
         }
     }
 
