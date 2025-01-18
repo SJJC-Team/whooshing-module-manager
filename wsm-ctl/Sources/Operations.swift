@@ -219,6 +219,33 @@ struct Sh {
         }
     }
 
+    struct PM2 {
+
+        enum Err: String, ErrList {
+            case pm2StartFailed = "PM2 启动失败"
+            case pm2StopFailed = "PM2 停止失败"
+            case pm2RestartFailed = "PM2 重启失败"
+        }
+
+        static func start(configFile: String, env: Env) throws {
+            let res = try run("pm2 start \(configFile)", env: env)
+            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 启动服务成功".succ)
+        }
+
+        static func stop(configFile: String, env: Env) throws {
+            let res = try run("pm2 stop \(configFile)", env: env)
+            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 停止服务成功".succ)
+        }
+
+        static func restart(configFile: String, env: Env) throws {
+            let res = try run("pm2 restart \(configFile)", env: env)
+            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 重启服务成功".succ)
+        }
+    }
+
     static func isServing(port: Int) throws -> Bool {
         let res = try run("lsof -i :\(port)", env: Env())
         return res.res.count > 0

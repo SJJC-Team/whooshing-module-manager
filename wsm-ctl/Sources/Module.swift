@@ -1,5 +1,7 @@
 import ArgumentParser
 import Foundation
+import FluentPostgresDriver
+import Fluent
 
 struct Module: LCDS {
     static let name = "module"
@@ -17,14 +19,14 @@ struct Module: LCDS {
         typealias Super = Module
         @Argument(help: "模块名称") var names: [String]
         var paras: [String] { names }
-        func one(para name: String, env: Env) throws { try Module.Action.create(name: name, env: env) }
+        func one(para name: String, env: Env, depends: Depends, i: Int) throws { try Module.Action.create(name: name, env: env, depends: depends) }
     }
     
     struct D: Delete {
         typealias Super = Module
         @Argument(help: "模块名称") var names: [String]
         var paras: [String] { names }
-        func one(para name: String, env: Env) throws { try Module.Action.delete(name: name, env: env) }
+        func one(para name: String, env: Env, depends: Depends, i: Int) throws { try Module.Action.delete(name: name, env: env, depends: depends) }
     }
     
     struct S: Stop { typealias Super = Module; var paras: [()] { [] }; }
@@ -35,6 +37,8 @@ extension Module {
         enum Err: String, ErrList {
             case moduleNotFound = "模块不存在"
             case pgServiceExist = "PostgreSQL 服务未删除"
+            case createModuleFailed = "创建模块失败"
+            case deleteModuleFailed = "删除模块失败"
         }   
 
         static func paraAvailable(module: String, env: Env) throws {
@@ -50,12 +54,28 @@ extension Module {
             return modules
         }
 
-        static func create(name: String, env: Env) throws {
+        static func create(name: String, env: Env, depends: Depends) throws {
             try NoCheck.create(name: name, env: env)
+            do {
+                print("正在更新数据库".info)
+                let res = try DBModel.Module.query(on: depends.db).sort(\.$startPort, .descending).first().wait()
+                let currentPort: Int
+                if let res = res { currentPort = res.startPort + res.portSpace }
+                else { currentPort = 20000 }
+                try DBModel.Module(name: name, serviceId: UUID(), connection: nil, startPort: currentPort, portSpace: 20).create(on: depends.db).wait()
+            } catch let err {
+                print("任务失败，正在回退".err)
+                try? delete(name: name, env: env, depends: depends)
+                throw Err.createModuleFailed.d(err.localizedDescription)
+            }
         }
 
-        static func delete(name: String, env: Env) throws {
+        static func delete(name: String, env: Env, depends: Depends) throws {
             try NoCheck.delete(name: name, env: env)
+            print("正在更新数据库".info)
+            let module = try DBModel.Module.query(on: depends.db).filter(\.$name == name).first().wait()
+            guard let module = module else { throw Err.deleteModuleFailed.d("未能找到该模块") }
+            do { try module.delete(force: false, on: depends.db).wait() } catch let err { throw Err.deleteModuleFailed.d(err.localizedDescription) }
         }
         
         enum NoCheck {

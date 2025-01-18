@@ -26,7 +26,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 将用于监听的端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env) throws { try Action.create(module: module, port: port, env: env) }
+        func one(para port: Int, env: Env, i: Int) throws { try Action.create(module: module, port: port, env: env) }
     }
     
     struct D: Delete {
@@ -35,7 +35,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env) throws { try Action.delete(module: module, port: port, env: env) }
+        func one(para port: Int, env: Env, i: Int) throws { try Action.delete(module: module, port: port, env: env) }
     }
     
     struct S: Stop {
@@ -44,7 +44,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env) throws { try Action.stop(module: module, port: port, env: env) }
+        func one(para port: Int, env: Env, i: Int) throws { try Action.stop(module: module, port: port, env: env) }
     }
 
     struct Restart: LCDExpand {
@@ -56,7 +56,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env) throws { try Action.restart(module: module, port: port, env: env) }
+        func one(para port: Int, env: Env, i: Int) throws { try Action.restart(module: module, port: port, env: env) }
     }
 
     struct Start: LCDExpand {
@@ -68,7 +68,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env) throws { try Action.start(module: module, port: port, env: env) }
+        func one(para port: Int, env: Env, i: Int) throws { try Action.start(module: module, port: port, env: env) }
     }
 }
 
@@ -109,7 +109,7 @@ extension PgService {
 
         static func stop(module: String, port: Int, env: Env) throws {
             try paraAvailable(module: module, port: port, env: env)
-            guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Err.serviceIsNotRunning.d(String(port)) }
+            guard try Sh.isServing(port: port) else { throw Err.serviceIsNotRunning.d(String(port)) }
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
             try Sh.PG.stop(dataDir: dataDir, env: env)
         }
@@ -120,7 +120,7 @@ extension PgService {
 
         static func start(module: String, port: Int, env: Env) throws {
             try paraAvailable(module: module, port: port, env: env)
-            guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.serviceIsRunning.d(String(port)) }
+            guard !(try Sh.isServing(port: port)) else { throw Err.serviceIsRunning.d(String(port)) }
             let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
             try Sh.PG.start(dataDir: dataDir, env: env)
         }
@@ -157,7 +157,7 @@ extension PgService {
                 try paraAvailable(module: module, port: port, env: env)
                 let perconaDir =  env.dataDir + "/" + module + "/percona"
                 let dataDir = "\(perconaDir)/\(port)"
-                guard try Sh.run("lsof -i:\(port)", env: env).code != 0 else { throw Err.serviceIsRunning.d("\(port), 您不能删除正在运行的服务") }
+                guard !(try Sh.isServing(port: port)) else { throw Err.serviceIsRunning.d("\(port), 您不能删除正在运行的服务") }
                 let backupName = Tool.bakName(name: String(port))
                 try Sh.Vault.dbBackup(module: module, port: port, backupName: backupName, env: env)
                 try Sh.Vault.deleteKey(in: "\(module)/\(port)", env: env)

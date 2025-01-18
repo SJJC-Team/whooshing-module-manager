@@ -37,7 +37,7 @@ struct PgDatabase: LCDS {
         @Option(name: .short, help: "PostgreSQL 服务的监听端口号") var port: Int
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 数据库名称") var databases: [String]
         var paras: [String] { databases }
-        func one(para database: String, env: Env) throws -> () { try Action.delete(module: module, port: port, database: database, env: env) }
+        func one(para database: String, env: Env, i: Int) throws -> () { try Action.delete(module: module, port: port, database: database, env: env) }
     }
 
     struct S: Stop { typealias Super = PgDatabase; var paras: [()] { [] } }

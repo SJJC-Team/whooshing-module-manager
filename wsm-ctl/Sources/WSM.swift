@@ -16,7 +16,7 @@ struct WSM: ParsableCommand {
 }
 
 struct Depends {
-    let db: PostgresDatabase
+    let db: Database
 
     init(env: Env) throws {
         self.db = try DatabaseDepends.initializeIfNeed(env: env)
