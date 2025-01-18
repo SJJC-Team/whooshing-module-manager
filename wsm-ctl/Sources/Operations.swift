@@ -337,5 +337,5 @@ struct FS {
 
 struct Tool {
     static func bakName(name: String) -> String { name + "-" + Date().description }
-    static func portAvailable(port: Int) -> Bool { port > 1024 && port < 65535 }
+    static func portAvailable(port: Int) -> Bool { port > 1 && port < 20 }
 }

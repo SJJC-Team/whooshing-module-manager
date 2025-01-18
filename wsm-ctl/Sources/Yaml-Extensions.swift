@@ -1,6 +1,6 @@
 extension Yaml.MODULE {
-    func create(env: Env) throws { 
-        try Module.Action.create(name: name, env: env)
+    func create(env: Env, depends: Depends) throws { 
+        try Module.Action.create(name: name, env: env, depends: depends)
         try self.pgsql.forEach { try $0.create(module: name, env: env) }
         try self.api.forEach { try $0.create(module: name, env: env) }
         try self.inline.forEach { try $0.create(module: name, env: env) }

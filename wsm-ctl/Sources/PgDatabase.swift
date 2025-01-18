@@ -67,34 +67,24 @@ extension PgDatabase {
         }
 
         static func create(module: String, port: Int, database: String, env: Env) throws {
-            try NoCheck.create(module: module, port: port, database: database, env: env)
+            try PgService.Action.paraAvailable(module: module, port: port, env: env)
+            guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Err.serviceNotRunning.d(String(port)) }
+            try Sh.Vault.login(env: env)
+            let key = try Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)
+            guard try Sh.PG.Db.test(port: port, database: database, key: key, env: env) == false else { throw Err.dbAlreadyExist.d("\(module)/\(port)/\(database)") }
+            do {
+                try Sh.PG.Db.create(module: module, port: port, db: database, key: key, env: env)
+            } catch let err {
+                print("任务失败，正在回退")
+                try delete(module: module, port: port, database: database, env: env)
+                throw err
+            }
         }
 
         static func delete(module: String, port: Int, database: String, env: Env) throws {
-            try NoCheck.delete(module: module, port: port, database: database, env: env)
-        }
-
-        struct NoCheck {
-            static func create(module: String, port: Int, database: String, env: Env) throws {
-                try PgService.Action.paraAvailable(module: module, port: port, env: env)
-                guard try Sh.run("lsof -i:\(port)", env: env).code == 0 else { throw Err.serviceNotRunning.d(String(port)) }
-                try Sh.Vault.login(env: env)
-                let key = try Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)
-                guard try Sh.PG.Db.test(port: port, database: database, key: key, env: env) == false else { throw Err.dbAlreadyExist.d("\(module)/\(port)/\(database)") }
-                do {
-                    try Sh.PG.Db.create(module: module, port: port, db: database, key: key, env: env)
-                } catch let err {
-                    print("任务失败，正在回退")
-                    try delete(module: module, port: port, database: database, env: env)
-                    throw err
-                }
-            }
-
-            static func delete(module: String, port: Int, database: String, env: Env) throws {
-                let key = try paraAvailable(module: module, port: port, database: database, env: env)
-                try Sh.PG.Db.delete(port: port, db: database, key: key, env: env)
-                try Sh.Vault.deleteKey(in: "\(module)/\(port)/tde/\(database)_1", env: env)
-            }
+            let key = try paraAvailable(module: module, port: port, database: database, env: env)
+            try Sh.PG.Db.delete(port: port, db: database, key: key, env: env)
+            try Sh.Vault.deleteKey(in: "\(module)/\(port)/tde/\(database)_1", env: env)
         }
     }
 }

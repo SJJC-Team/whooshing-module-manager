@@ -105,7 +105,7 @@ extension LCDExpand {
         }
     }
 
-    mutating func one(para: ParaType, env: Env, depends: Depends, i: Int) throws -> CmdRes { return try one(para: para, env: env) }
+    mutating func one(para: ParaType, env: Env, depends: Depends, i: Int) throws -> CmdRes { return try one(para: para, env: env, i: i) }
     mutating func one(para: ParaType, env: Env, i: Int) throws { }
 }
 

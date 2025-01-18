@@ -7,7 +7,8 @@ struct Yaml {
     }
     private init(_ tops: [Top]) { self.tops = tops }
     func create() throws {
-        for top in tops { try top.create(env: Env()) }
+        let env = try Env()
+        for top in tops { try top.create(env: env, depends: Depends(env: env)) }
         print("Yaml 配置创建成功".succ)
     }
 }

@@ -144,7 +144,7 @@ extension ApiService {
 
 
             
-            try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", env: env)
+            // try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", env: env)
         }
 
         static func start(module: String, port: Int, env: Env) throws {
@@ -154,7 +154,7 @@ extension ApiService {
 
             
 
-            try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", env: env)
+            // try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", env: env)
         }
 
         static func stop(module: String, port: Int, env: Env) throws {
