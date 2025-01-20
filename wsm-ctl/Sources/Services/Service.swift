@@ -1,31 +1,55 @@
 import ArgumentParser
 import Foundation
 
-struct ApiService: LCDS {
-    static let name = "apiservice"
-    static let shortName: String? = nil
-    static let paraLabel = "端口"
-    static let help = "API 网络后端服务"
-    static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self, S.self, Restart.self, Start.self]
+protocol ServiceType {
+    static var serName: String { get }
+    static var cmdName: String { get }
+    static var dataName: String { get }
+}
+
+enum Api: ServiceType {
+    static let serName: String = "API"
+    static let cmdName: String = "api"
+    static let dataName: String = "api"
+}
+
+enum Inline: ServiceType {
+    static let serName: String = "INLINE"
+    static let cmdName: String = "inl"
+    static let dataName: String = "inline"
+}
+
+enum Https: ServiceType {
+    static let serName: String = "HTTPS"
+    static let cmdName: String = "htps"
+    static let dataName: String = "https"
+}
+
+struct Service<SerType: ServiceType>: LCDS {
+    static var name: String { "\(SerType.cmdName)service" }
+    static var shortName: String? { nil }
+    static var paraLabel: String { "端口" }
+    static var help: String { "\(SerType.serName) 网络后端服务" }
+    static var subCmds: [any ParsableCommand.Type] { [L.self, C.self, D.self, S.self, Restart.self, Start.self] }
 
     struct L: List {
-        typealias Super = ApiService
+        typealias Super = Service<SerType>
         @Argument(help: "模块名称") var module: String
         func cmd(env: Env, depends: Depends) throws -> [String] { 
             let dirs = try Action.list(module: module, env: env) 
             let isEmpty = dirs.isEmpty
-            if isEmpty { print("无 API 服务".info) }
+            if isEmpty { print("无 \(SerType.serName) 服务".info) }
             else { for dir in dirs { print(dir.info) } }
             return dirs
         }
     }
     
     struct C: Create {
-        typealias Super = ApiService
+        typealias Super = Service<SerType>
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, help: "该 API 服务将用于监听的端口号") var port: Int
+        @Option(name: .shortAndLong, help: "该 \(SerType.serName) 服务将用于监听的端口号") var port: Int
         @Option(name: .shortAndLong, help: "运行该服务的可执行文件包") var bundle: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "该 API 服务连接的数据库端口号") var databasePorts: [Int]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "该 \(SerType.serName) 服务连接的数据库端口号") var databasePorts: [Int]
         var paras: [Int] { [port] }
         func one(para port: Int, i: Int, env: Env, depends: Depends) throws { 
             try Action.create(module: module, port: port, bundle: bundle, dbPorts: databasePorts, env: env, depends: depends) 
@@ -33,48 +57,48 @@ struct ApiService: LCDS {
     }
     
     struct D: Delete {
-        typealias Super = ApiService
+        typealias Super = Service<SerType>
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
         func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.delete(module: module, port: port, env: env, depends: depends) }
     }
     
     struct S: Stop {
-        typealias Super = ApiService
+        typealias Super = Service<SerType>
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
         func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.stop(module: module, port: port, env: env, depends: depends) }
     }
 
     struct Restart: LCDExpand {
-        typealias Super = ApiService
-        static let name: String = "restart"
-        static let shortName: String? = "resta"
-        static let help: String = "重启 "
+        typealias Super = Service<SerType>
+        static var name: String { "restart" }
+        static var shortName: String? { "resta" }
+        static var help: String { "重启 " }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
         func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.restart(module: module, port: port, env: env, depends: depends) }
     }
 
     struct Start: LCDExpand {
-        typealias Super = ApiService
-        static let name: String = "start"
-        static let shortName: String? = "sta"
-        static let help: String = "启动 "
+        typealias Super = Service<SerType>
+        static var name: String { "start" }
+        static var shortName: String? { "sta" }
+        static var help: String { "启动 " }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
         func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.start(module: module, port: port, env: env, depends: depends) }
     }
 }
 
-extension ApiService {
+extension Service {
     enum Action {
         enum Err: String, ErrList {
             case portOccupied = "端口被占用"
@@ -97,7 +121,7 @@ extension ApiService {
             try Module.Action.NoCheck.paraAvailable(module: module, env: env)
             let moduleDir = "\(env.dataDir)/\(module)/"
             try FS.mkdir(path: moduleDir, slience: true, withIntermediates: true, output: false)
-            let dirs = try FS.ls(path: moduleDir, dir: true, hiddenFile: false).filter { $0.hasPrefix("api-") }
+            let dirs = try FS.ls(path: moduleDir, dir: true, hiddenFile: false).filter { $0.hasPrefix("\(SerType.dataName)-") }
             return dirs
         }
         
@@ -131,7 +155,7 @@ extension ApiService {
             static func paraAvailable(module: String, port: Int, env: Env) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 let moduleDir = env.dataDir + "/" + module
-                let dataDir = "\(moduleDir)/api-\(port)"
+                let dataDir = "\(moduleDir)/\(SerType.dataName)-\(port)"
                 guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
                 guard FS.isExist(path: dataDir, dir: true) == true else { throw Err.serviceNotFound.d(dataDir) }
             }
@@ -149,7 +173,7 @@ extension ApiService {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
 
                 let moduleDir = "\(env.dataDir)/\(module)"
-                let dataDir = "\(moduleDir)/api-\(port)"
+                let dataDir = "\(moduleDir)/\(SerType.dataName)-\(port)"
                 let envFile = "\(dataDir)/.env"
                 let p = basePort + port
 
@@ -158,16 +182,16 @@ extension ApiService {
                 guard try !Sh.isServing(port: p) else { throw Err.portOccupied.d("\(p)[\(basePort) + \(port)]") }
                 
                 var paras: [String: String] = [:]
-                paras["WHOOSHING_API_SERVICE_DB_COUNT"] = String(dbPorts.count)
-                paras["WHOOSHING_API_SERVICE_NAME"] = "APIService-\(port)"
-                paras["WHOOSHING_API_SERVICE_PORT"] = String(port)
+                paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_COUNT"] = String(dbPorts.count)
+                paras["WHOOSHING_\(SerType.serName)_SERVICE_NAME"] = "\(SerType.serName)Service-\(port)"
+                paras["WHOOSHING_\(SerType.serName)_SERVICE_PORT"] = String(port)
                 for (i, dp) in dbPorts.enumerated() {
                     let dbp = basePort + dp
                     guard try Sh.isServing(port: dbp) else { throw Err.pgServiceNotRunning.d(String(dbp)) }
-                    paras["WHOOSHING_API_SERVICE_DB_\(i + 1)_NAME"] = "PGDatabase-\(dp)"
-                    paras["WHOOSHING_API_SERVICE_DB_\(i + 1)_PORT"] = String(dp)
-                    paras["WHOOSHING_API_SERVICE_DB_\(i + 1)_USER"] = "woo"
-                    paras["WHOOSHING_API_SERVICE_DB_\(i + 1)_PASSWORD"] = "\(module)/\(dp)/role/woo"
+                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_NAME"] = "PGDatabase-\(dp)"
+                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_PORT"] = String(dp)
+                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_USER"] = "woo"
+                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_PASSWORD"] = "\(module)/\(dp)/role/woo"
                 }
 
                 do {
@@ -187,7 +211,7 @@ extension ApiService {
             static func delete(module: String, port: Int, env: Env, basePort: Int) throws {
                 try paraAvailable(module: module, port: port, env: env)
                 let moduleDir = "\(env.dataDir)/\(module)"
-                let dataDir = "\(moduleDir)/api-\(port)"
+                let dataDir = "\(moduleDir)/\(SerType.dataName)-\(port)"
                 let envFile = "\(dataDir)/.env"
                 let p = basePort + port
                 guard !(try Sh.isServing(port: p)) else { throw Err.serviceIsRunning.d("\(p)[\(basePort) + \(port)], 您不能删除正在运行的服务") }
@@ -199,7 +223,7 @@ extension ApiService {
 
             static func restart(module: String, port: Int, env: Env, basePort: Int) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
-                let dataDir = "\(env.dataDir)/\(module)/api-\(port)"
+                let dataDir = "\(env.dataDir)/\(module)/\(SerType.dataName)-\(port)"
                 let paras = try parseEnv(in: "\(dataDir)/.env", basePort: basePort, env: env)
                 try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", args: paras, env: env)
             }
@@ -207,7 +231,7 @@ extension ApiService {
             static func start(module: String, port: Int, env: Env, basePort: Int) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 guard try !Sh.isServing(port: basePort + port) else { throw Err.serviceIsRunning.d("\(basePort + port)[\(basePort) + \(port)]") }
-                let dataDir = "\(env.dataDir)/\(module)/api-\(port)"
+                let dataDir = "\(env.dataDir)/\(module)/\(SerType.dataName)-\(port)"
                 let paras = try parseEnv(in: "\(dataDir)/.env", basePort: basePort, env: env)
                 try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", args: paras, env: env)
             }
@@ -215,7 +239,7 @@ extension ApiService {
             static func stop(module: String, port: Int, env: Env, basePort: Int) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 guard try Sh.isServing(port: basePort + port) else { throw Err.serviceIsNotRunning.d("\(basePort + port)[\(basePort) + \(port)]") }
-                let dataDir = "\(env.dataDir)/\(module)/api-\(port)"
+                let dataDir = "\(env.dataDir)/\(module)/\(SerType.dataName)-\(port)"
                 try Sh.PM2.stop(configFile: "\(dataDir)/pm2.config.json", env: env)
             }
         }
