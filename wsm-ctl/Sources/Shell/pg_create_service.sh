@@ -8,7 +8,7 @@ b='\033[34m'
 n='\033[0m'
 
 data_dir="$WHOOSHING_DATA_DIR/$module/percona/$p"
-port=$(($port_base + $port))
+port=$(($port_base + $p))
 
 export PATH=/usr/lib/postgresql/17/bin:$PATH
 conf_file="$data_dir/postgresql.conf"

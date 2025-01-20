@@ -14,7 +14,7 @@ enum DBModel {
             let connection = PGField("connection", .string)
             let startPort = PGField("start_port", .int, true).cons([.required])
             let portSpace = PGField("port_space", .int).def(20).cons([.required])
-            let createdAt = PGField("create_at", .string, true)
+            let createdAt = PGField("create_at", .string)
             let updateAt = PGField("update_at", .string)
         }
 

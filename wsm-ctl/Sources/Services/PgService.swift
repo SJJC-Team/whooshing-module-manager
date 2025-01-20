@@ -25,7 +25,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 将用于监听的端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.create(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.create(module: module, port: port, env: env, depends: depends) }
     }
     
     struct D: Delete {
@@ -34,7 +34,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.delete(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.delete(module: module, port: port, env: env, depends: depends) }
     }
     
     struct S: Stop {
@@ -43,7 +43,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.stop(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.stop(module: module, port: port, env: env, depends: depends) }
     }
 
     struct Restart: LCDExpand {
@@ -55,7 +55,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int) throws { try Action.restart(module: module, port: port, env: env) }
+        func one(para port: Int, i: Int, env: Env) throws { try Action.restart(module: module, port: port, env: env) }
     }
 
     struct Start: LCDExpand {
@@ -67,7 +67,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.start(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.start(module: module, port: port, env: env, depends: depends) }
     }
 }
 
@@ -166,7 +166,7 @@ extension PgService {
                     try Sh.PG.restart(dataDir: dataDir, env: env)
                 } catch let err {
                     print("任务失败，正在回退")
-                    try delete(module: module, port: port, env: env, basePort: basePort)
+                    try? delete(module: module, port: port, env: env, basePort: basePort)
                     throw err
                 }
             }

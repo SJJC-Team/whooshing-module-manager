@@ -27,7 +27,7 @@ struct ApiService: LCDS {
         @Option(name: .shortAndLong, help: "运行该服务的可执行文件包") var bundle: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "该 API 服务连接的数据库端口号") var databasePorts: [Int]
         var paras: [Int] { [port] }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { 
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { 
             try Action.create(module: module, port: port, bundle: bundle, dbPorts: databasePorts, env: env, depends: depends) 
         }
     }
@@ -37,7 +37,7 @@ struct ApiService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.delete(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.delete(module: module, port: port, env: env, depends: depends) }
     }
     
     struct S: Stop {
@@ -46,7 +46,7 @@ struct ApiService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.stop(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.stop(module: module, port: port, env: env, depends: depends) }
     }
 
     struct Restart: LCDExpand {
@@ -58,7 +58,7 @@ struct ApiService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.restart(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.restart(module: module, port: port, env: env, depends: depends) }
     }
 
     struct Start: LCDExpand {
@@ -70,7 +70,7 @@ struct ApiService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API(s) 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, env: Env, i: Int, depends: Depends) throws { try Action.start(module: module, port: port, env: env, depends: depends) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.start(module: module, port: port, env: env, depends: depends) }
     }
 }
 

@@ -171,10 +171,11 @@ struct Sh {
             
             typealias DataType = (oid: String, db: String)
 
-            static func create(module: String, port: Int, db: String, key: String, env: Env) throws {
+            static func create(module: String, port: Int, basePort: Int, db: String, key: String, env: Env) throws {
                 let res = try run(in: File.sh(.pgCreateDb), paras: [
                     "module": module,
-                    "port": String(port),
+                    "p": String(port),
+                    "port_base": String(basePort),
                     "database": db,
                     "key": key
                 ], env: env)

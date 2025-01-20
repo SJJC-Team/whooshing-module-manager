@@ -87,8 +87,8 @@ protocol LCDExpand: LCDCmd {
     associatedtype ParaType = ()
     var paras: [ParaType] { get }
     static var paraLabel: String { get }
-    mutating func one(para: ParaType, env: Env, i: Int) throws -> CmdRes
-    mutating func one(para: ParaType, env: Env, depends: Depends, i: Int) throws -> CmdRes
+    mutating func one(para: ParaType, i: Int, env: Env) throws -> CmdRes
+    mutating func one(para: ParaType, i: Int, env: Env, depends: Depends) throws -> CmdRes
 }
 
 extension LCDExpand { 
@@ -98,15 +98,15 @@ extension LCDExpand {
         for (i, para) in self.paras.enumerated() { 
             do {
                 if self.paras.count > 1 { print("正在处理任务 \(i + 1): \(Self.paraLabel) \(para) ...".info) }
-                let _ = try self.one(para: para, env: env, depends: depends, i: i)
+                let _ = try self.one(para: para, i: i, env: env, depends: depends)
             } catch let err {
                 print(err)
             }
         }
     }
 
-    mutating func one(para: ParaType, env: Env, depends: Depends, i: Int) throws -> CmdRes { return try one(para: para, env: env, i: i) }
-    mutating func one(para: ParaType, env: Env, i: Int) throws { }
+    mutating func one(para: ParaType, i: Int, env: Env, depends: Depends) throws -> CmdRes { return try one(para: para, i: i, env: env) }
+    mutating func one(para: ParaType, i: Int, env: Env) throws { }
 }
 
 protocol List: LCDCmd {}

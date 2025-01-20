@@ -19,14 +19,14 @@ struct Module: LCDS {
         typealias Super = Module
         @Argument(help: "模块名称") var names: [String]
         var paras: [String] { names }
-        func one(para name: String, env: Env, depends: Depends, i: Int) throws { try Module.Action.create(name: name, env: env, depends: depends) }
+        func one(para name: String, i: Int, env: Env, depends: Depends) throws { try Module.Action.create(name: name, env: env, depends: depends) }
     }
     
     struct D: Delete {
         typealias Super = Module
         @Argument(help: "模块名称") var names: [String]
         var paras: [String] { names }
-        func one(para name: String, env: Env, depends: Depends, i: Int) throws { try Module.Action.delete(name: name, env: env, depends: depends) }
+        func one(para name: String, i: Int, env: Env, depends: Depends) throws { try Module.Action.delete(name: name, env: env, depends: depends) }
     }
     
     struct S: Stop { typealias Super = Module; var paras: [()] { [] }; }
@@ -39,6 +39,7 @@ extension Module {
             case pgServiceExist = "PostgreSQL 服务未删除"
             case createModuleFailed = "创建模块失败"
             case deleteModuleFailed = "删除模块失败"
+            case queryDatabaseFailed = "查询数据库失败"
             case missingModuleConfig = "模块配置异常缺失"
         }   
 
@@ -57,15 +58,15 @@ extension Module {
         }
 
         static func create(name: String, env: Env, depends: Depends) throws {
-            guard let res = try DBModel.Module.query(on: depends.db).filter(\.$name == name).first().wait() else { throw Err.missingModuleConfig }
-            try NoCheck.create(name: name, env: env, basePort: res.startPort)
+            let res: DBModel.Module?
+            do { res = try DBModel.Module.query(on: depends.db).sort(\.$startPort, .descending).first().wait() } catch let err { throw Err.queryDatabaseFailed.d(String(reflecting: err)) }
+            let currentPort: Int
+            if let res = res { currentPort = res.startPort + res.portSpace }
+            else { currentPort = 20020 }
+            try NoCheck.create(name: name, env: env, basePort: currentPort)
             do {
-                print("正在更新数据库".info)
-                let res = try DBModel.Module.query(on: depends.db).sort(\.$startPort, .descending).first().wait()
-                let currentPort: Int
-                if let res = res { currentPort = res.startPort + res.portSpace }
-                else { currentPort = 20000 }
                 try DBModel.Module(name: name, serviceId: UUID(), connection: nil, startPort: currentPort, portSpace: 20).create(on: depends.db).wait()
+                print("数据库更新完成".succ)
             } catch let err {
                 print("任务失败，正在回退".err)
                 try? delete(name: name, env: env, depends: depends)
@@ -76,8 +77,8 @@ extension Module {
         static func delete(name: String, env: Env, depends: Depends) throws {
             let res = try paraAvailable(module: name, env: env, depends: depends)
             try NoCheck.delete(name: name, env: env, basePort: res.startPort)
-            print("正在更新数据库".info)
             do { try res.delete(force: false, on: depends.db).wait() } catch let err { throw Err.deleteModuleFailed.d(err.localizedDescription) }
+            print("数据库更新完成".succ)
         }
         
         enum NoCheck {
@@ -95,7 +96,7 @@ extension Module {
                     try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
                 } catch let err {
                     print("任务失败，正在回退".err)
-                    try delete(name: name, env: env, basePort: basePort)
+                    try? delete(name: name, env: env, basePort: basePort)
                     throw err
                 }
             }

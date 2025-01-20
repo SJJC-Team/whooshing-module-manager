@@ -6,12 +6,14 @@ import FluentPostgresDriver
 @main
 struct WSM: ParsableCommand {
     static let configuration = CommandConfiguration(
-        subcommands: Config.subCmds,
+        // subcommands: Config.subCmds,
         groupedSubcommands: [
             .init(name: Module.help + "管理", subcommands: Module.subCmds),
             .init(name: PgService.help + "管理", subcommands: PgService.subCmds),
-            .init(name: PgDatabase.help + "管理", subcommands: PgDatabase.subCmds)
-        ], defaultSubcommand: Config.C.self
+            .init(name: PgDatabase.help + "管理", subcommands: PgDatabase.subCmds),
+            .init(name: ApiService.help + "管理", subcommands: ApiService.subCmds)
+        ]
+        // , defaultSubcommand: Config.C.self
     )
 }
 

@@ -26,7 +26,7 @@ struct PgDatabase: LCDS {
         @Option(name: .short, help: "PostgreSQL 服务的监听端口号") var port: Int
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "要新建的 PostgreSQL 数据库名称") var databases: [String]
         var paras: [String] { databases }
-        func one(para database: String, env: Env, depends: Depends) throws -> () { try Action.create(module: module, port: port, database: database, env: env, depends: depends) }
+        func one(para database: String, i: Int, env: Env, depends: Depends) throws -> () { try Action.create(module: module, port: port, database: database, env: env, depends: depends) }
     }
     
     struct D: Delete {
@@ -35,7 +35,7 @@ struct PgDatabase: LCDS {
         @Option(name: .short, help: "PostgreSQL 服务的监听端口号") var port: Int
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 数据库名称") var databases: [String]
         var paras: [String] { databases }
-        func one(para database: String, env: Env, i: Int, depends: Depends) throws -> () { try Action.delete(module: module, port: port, database: database, env: env, depends: depends) }
+        func one(para database: String, i: Int, env: Env, depends: Depends) throws -> () { try Action.delete(module: module, port: port, database: database, env: env, depends: depends) }
     }
 
     struct S: Stop { typealias Super = PgDatabase; var paras: [()] { [] } }
@@ -75,7 +75,7 @@ extension PgDatabase {
                 try PgService.Action.NoCheck.paraAvailable(module: module, port: port, env: env)
                 let p = basePort + port
                 guard try Sh.isServing(port: p) else { throw Err.serviceNotRunning.d("\(p)[\(basePort) + \(port)]") }
-                try Sh.Vault.login(env: env)
+                try Sh.Vault.login(env: env, silent: true)
                 let key = try Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)
                 return key
             }
@@ -90,10 +90,10 @@ extension PgDatabase {
                 let p = basePort + port
                 guard try Sh.PG.Db.isExist(port: p, database: database, key: key, env: env) == false else { throw Err.dbAlreadyExist.d("\(module)/\(p)[\(basePort) + \(port)]/\(database)") }
                 do {
-                    try Sh.PG.Db.create(module: module, port: p, db: database, key: key, env: env)
+                    try Sh.PG.Db.create(module: module, port: port, basePort: basePort, db: database, key: key, env: env)
                 } catch let err {
                     print("任务失败，正在回退")
-                    try delete(module: module, port: port, database: database, env: env, basePort: basePort)
+                    try? delete(module: module, port: port, database: database, env: env, basePort: basePort)
                     throw err
                 }
             }
