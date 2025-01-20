@@ -310,6 +310,11 @@ struct FS {
         print("移动文件: \(path) 到 \(to) 成功".succ)
     }
 
+    static func cp(path: String, to: String) throws {
+        do { try fileManager.copyItem(atPath: path, toPath: to) } catch let err { throw Err.mvFailed.d(err.localizedDescription) }
+        print("复制文件: \(path) 到 \(to) 成功".succ)
+    }
+
     static func isExist(path: String, dir: Bool = true) -> Bool {
         var isDir: Bool = false
         let exists = fileManager.fileExists(atPath: path, isDirectory: &isDir)

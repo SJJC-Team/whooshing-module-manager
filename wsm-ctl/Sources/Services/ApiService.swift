@@ -117,7 +117,7 @@ extension ApiService {
             do {
                 try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
                 try FS.setPermissions(path: dataDir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
-                try FS.mv(path: bundle, to: dataDir)
+                try FS.cp(path: bundle, to: dataDir)
                 try start(module: module, port: port, env: env)
             } catch let err {
                 print("任务失败，正在回退")

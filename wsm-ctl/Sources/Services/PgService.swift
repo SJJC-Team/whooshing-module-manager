@@ -170,6 +170,7 @@ extension PgService {
                     throw err
                 }
             }
+            
             static func delete(module: String, port: Int, env: Env, basePort: Int) throws {
                 try paraAvailable(module: module, port: port, env: env)
                 let perconaDir =  env.dataDir + "/" + module + "/percona"
