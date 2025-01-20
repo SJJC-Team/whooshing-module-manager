@@ -7,7 +7,8 @@ struct Yaml {
     }
     private init(_ tops: [Top]) { self.tops = tops }
     func create() throws {
-        for top in tops { try top.create(env: Env()) }
+        let env = try Env()
+        for top in tops { try top.create(env: env, depends: Depends(env: env)) }
         print("Yaml 配置创建成功".succ)
     }
 }
@@ -35,11 +36,8 @@ extension Yaml {
         var api: [API] = []
         var inline: [INLINE] = []
         var https: [HTTPS] = []
-
         static let paras: [String: Types] = [ "#domain": .string, "pgsql": .dataTemplate(PGSQL.self), "api": .dataTemplate(API.self), "inline": .dataTemplate(INLINE.self), "https": .dataTemplate(HTTPS.self) ]
-
         init() {}
-
         init(data: [String: Any], name: String) {
             self.name = name
             self.domain = data["domain"] as? String
@@ -52,14 +50,10 @@ extension Yaml {
 
     struct PGSQL: DataTemplate {
         var name: String = ""
-
         var database: String = ""
         var port: Int = 0
-
         static let paras: [String: Types] = [ "database": .string, "port": .int ]
-
         init() {}
-
         init(data: [String: Any], name: String) {
             self.name = name
             self.database = data["database"] as! String
@@ -69,56 +63,50 @@ extension Yaml {
 
     struct API: DataTemplate {
         var name: String = ""
-
-        var pgdatabases: [String] = []
+        var pgDatabasePorts: [Int] = []
         var port: Int = 0
         var domain: String? = nil
-
-        static let paras: [String: Types] = [ "pgdatabases": .stringArr, "port": .int, "#domain": .string ]
-
+        var bundle: String = ""
+        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string, "bundle": .string ]
         init() {}
-
         init(data: [String: Any], name: String) {
             self.name = name
-            self.pgdatabases = data["pgdatabases"] as! [String]
+            self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
             self.port = data["port"] as! Int
             self.domain = data["domain"] as? String
+            self.bundle = data["bundle"] as! String
         }
     }
 
     struct INLINE: DataTemplate {
         var name: String = ""
-
-        var pgdatabases: [String] = []
+        var pgDatabasePorts: [Int] = []
         var port: Int = 0
-
-        static let paras: [String: Types] = [ "pgdatabases": .stringArr, "port": .int ]
-
+        var bundle: String = ""
+        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "bundle": .string ]
         init() {}
-
         init(data: [String : Any], name: String) {
             self.name = name
-            self.pgdatabases = data["pgdatabases"] as! [String]
+            self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
             self.port = data["port"] as! Int
+            self.bundle = data["bundle"] as! String
         }
     }
 
     struct HTTPS: DataTemplate {
         var name: String = ""
-
-        var pgdatabases: [String] = []
+        var pgDatabasePorts: [Int] = []
         var port: Int = 0
         var domain: String? = nil
-
-        static let paras: [String: Types] = [ "pgdatabases": .stringArr, "port": .int, "#domain": .string ]
-
+        var bundle: String = ""
+        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string, "bundle": .string ]
         init() {}
-
         init(data: [String: Any], name: String) {
             self.name = name
-            self.pgdatabases = data["pgdatabases"] as! [String]
+            self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
             self.port = data["port"] as! Int
             self.domain = data["domain"] as? String
+            self.bundle = data["bundle"] as! String
         }
     }
 

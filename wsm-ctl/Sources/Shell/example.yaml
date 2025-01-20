@@ -11,14 +11,17 @@ testing1:
     api:
         "default":
             port: 1
-            pgdatabases: ["default", "pg2"]
+            pgDatabasePorts: [0, 10]
             domain: "api"
+            bundle: "Path to bundle"
     inline:
         "default":
             port: 2
-            pgdatabases: ["default", "pg2"]
+            pgDatabasePorts: [0, 10]
+            bundle: "Path to bundle"
     https:
         "test":
             port: 3
-            pgdatabases: ["default"]
+            pgDatabasePorts: [0]
             domain: "web"
+            bundle: "Path to bundle"

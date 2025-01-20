@@ -16,7 +16,7 @@ struct Config: LCDS {
         var paras: [String] { [file] }
         static let help: String = "提供 .yaml 文件配置服务"
 
-        func one(para: String, env: Env) throws -> () {
+        func one(para: String, i: Int, env: Env) throws -> () {
             try paraAvailable(file: file, env: env)
             guard let data = try Yams.load(yaml: try String(contentsOfFile: file, encoding: .utf8)) else { throw Err.parseFailed.d(file) }
             let res = try Yaml.parse(data: data, filePath: file)

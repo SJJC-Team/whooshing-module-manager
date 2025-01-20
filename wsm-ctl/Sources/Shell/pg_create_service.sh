@@ -1,4 +1,4 @@
-# module port key
+# module p port_base key
 
 set -e
 
@@ -7,10 +7,14 @@ g='\033[32m'
 b='\033[34m'
 n='\033[0m'
 
-data_dir="$WHOOSHING_DATA_DIR/$module/percona/$port"
+data_dir="$WHOOSHING_DATA_DIR/$module/percona/$p"
+port=$(($port_base + $p))
 
 export PATH=/usr/lib/postgresql/17/bin:$PATH
 conf_file="$data_dir/postgresql.conf"
+sudo mkdir -p /var/run/postgresql
+chown -R root:whooshing /var/run/postgresql
+chmod -R 770 /var/run/postgresql
 
 # 初始化数据库
 echo -e "${b}初始化数据库...${n}"
@@ -25,7 +29,7 @@ echo -e "${b}创建扩展 - pg_tde...${n}"
 sudo -u woo psql -d template1 -p $port -U woo -c "DROP DATABASE postgres;"
 sudo -u woo psql -d template1 -p $port -U woo -c "CREATE EXTENSION pg_tde;"
 sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$WHOOSHING_VAULT_ROOT_TOKEN','$VAULT_ADDR', '$module', NULL);"
-sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_set_principal_key('$port/tde/template1', 'vault-provider');"
+sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_set_principal_key('$p/tde/template1', 'vault-provider');"
 
 # 设置密码
 echo -e "${b}设置密码...${n}"

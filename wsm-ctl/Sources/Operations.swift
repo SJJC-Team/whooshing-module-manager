@@ -36,6 +36,7 @@ struct Sh {
     struct Vault {
 
         enum Err: String, ErrList {
+            case vaultNotRunning = "Vault 未运行"
             case vaultEngineExist = "Vault 引擎已存在"
             case vaultNewEngineFailed = "新建 Vault 引擎失败"
             case vaultLoginFailed = "Vault 登陆失败"
@@ -47,12 +48,13 @@ struct Sh {
             case vaultUnknowError = "Vault 未知错误"
         }
 
-        static func login(env: Env) throws {
+        static func login(env: Env, silent: Bool = false) throws {
             let res = try run(in: File.sh(.vaultLogin), env: env)
             switch res.code {
-                case 1: throw Err.vaultIsSealed
+                case 1: throw Err.vaultNotRunning
                 case 2: throw Err.vaultLoginFailed
-                case 0: print("成功登陆到 Vault".succ)
+                case 3: throw Err.vaultIsSealed
+                case 0: if !silent { print("成功登陆到 Vault".succ) } 
                 default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
             }
         }
@@ -135,10 +137,11 @@ struct Sh {
             case pgDbVaildFailed = "PostgreSQL 数据库验证失败"
         }
 
-        static func create(module: String, port: Int, key: String, env: Env) throws {
+        static func create(module: String, port: Int, basePort: Int, key: String, env: Env) throws {
             let res = try run(in: File.sh(.pgCreateService), paras: [
                 "module": module,
-                "port": String(port),
+                "p": String(port),
+                "port_base": String(basePort),
                 "key": key
             ], env: env)
             guard res.code == 0 else { throw Err.pgUnknowError.d(String(data: res.res, encoding: .utf8)!) }
@@ -168,10 +171,11 @@ struct Sh {
             
             typealias DataType = (oid: String, db: String)
 
-            static func create(module: String, port: Int, db: String, key: String, env: Env) throws {
+            static func create(module: String, port: Int, basePort: Int, db: String, key: String, env: Env) throws {
                 let res = try run(in: File.sh(.pgCreateDb), paras: [
                     "module": module,
-                    "port": String(port),
+                    "p": String(port),
+                    "port_base": String(basePort),
                     "database": db,
                     "key": key
                 ], env: env)
@@ -202,7 +206,7 @@ struct Sh {
                 return dbList
             }
 
-            static func test(port: Int, database: String, key: String, env: Env) throws -> Bool {
+            static func isExist(port: Int, database: String, key: String, env: Env) throws -> Bool {
                 let res = try run(in: File.sh(.pgTestDb), paras: [
                     "port": String(port),
                     "database": database,
@@ -215,6 +219,40 @@ struct Sh {
                 }
             }
         }
+    }
+
+    struct PM2 {
+
+        enum Err: String, ErrList {
+            case pm2StartFailed = "PM2 启动失败"
+            case pm2StopFailed = "PM2 停止失败"
+            case pm2RestartFailed = "PM2 重启失败"
+        }
+
+        static func restart(configFile: String, args: [String: String], env: Env) throws {
+            let argStr = args.map { "\($0)=\($1)" }
+            let res = try run(["-c"] + argStr + ["pm2 restart \(configFile)"], env: env)
+            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 重启服务成功".succ)
+        }
+
+        static func start(configFile: String, args: [String: String], env: Env) throws {
+            let argStr = args.map { "\($0)=\($1)" }
+            let res = try run(["-c"] + argStr + ["pm2 start \(configFile)"], env: env)
+            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 启动服务成功".succ)
+        }
+
+        static func stop(configFile: String, env: Env) throws {
+            let res = try run("pm2 stop \(configFile)", env: env)
+            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 停止服务成功".succ)
+        }
+    }
+
+    static func isServing(port: Int) throws -> Bool {
+        let res = try run("lsof -i :\(port)", env: Env())
+        return res.res.count > 0
     }
 
     static func run(_ arguments: [String], paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) {
@@ -273,6 +311,41 @@ struct FS {
         print("移动文件: \(path) 到 \(to) 成功".succ)
     }
 
+    static func cp(path: String, to: String) throws {
+        do { try fileManager.copyItem(atPath: path, toPath: to) } catch let err { throw Err.mvFailed.d(err.localizedDescription) }
+        print("复制文件: \(path) 到 \(to) 成功".succ)
+    }
+
+    static func rm(path: String) throws {
+        do { try fileManager.removeItem(atPath: path) } catch let err { throw Err.mvFailed.d(err.localizedDescription) }
+        print("删除文件: \(path) 成功".succ)
+    }
+
+    static func createEnvFile(at path: String, with content: [String: String]) throws {
+        let envContent = content.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+        guard fileManager.createFile(atPath: path, contents: envContent.data(using: .utf8), attributes: nil) else { throw Err.fileCreateFailed.d(path) }
+        print("创建 env 文件: \(path) 成功".succ)
+    }
+
+    static func readEnvFile(at path: String) throws -> [String: String] {
+        guard let content = fileManager.contents(atPath: path),
+              let contentString = String(data: content, encoding: .utf8) else {
+            throw Err.fileCreateFailed.d(path)
+        }
+        
+        var envDict = [String: String]()
+        let lines = contentString.split(separator: "\n")
+        for line in lines {
+            let keyValue = line.split(separator: "=", maxSplits: 1)
+            if keyValue.count == 2 {
+                let key = String(keyValue[0]).trimmingCharacters(in: .whitespaces)
+                let value = String(keyValue[1]).trimmingCharacters(in: .whitespaces)
+                envDict[key] = value
+            }
+        }
+        return envDict
+    }
+
     static func isExist(path: String, dir: Bool = true) -> Bool {
         var isDir: Bool = false
         let exists = fileManager.fileExists(atPath: path, isDirectory: &isDir)
@@ -301,5 +374,5 @@ struct FS {
 
 struct Tool {
     static func bakName(name: String) -> String { name + "-" + Date().description }
-    static func portAvailable(port: Int) -> Bool { port > 1024 && port < 65535 }
+    static func portAvailable(port: Int) -> Bool { port >= 0 && port < 20 }
 }
