@@ -315,6 +315,36 @@ struct FS {
         print("复制文件: \(path) 到 \(to) 成功".succ)
     }
 
+    static func rm(path: String) throws {
+        do { try fileManager.removeItem(atPath: path) } catch let err { throw Err.mvFailed.d(err.localizedDescription) }
+        print("删除文件: \(path) 成功".succ)
+    }
+
+    static func createEnvFile(at path: String, with content: [String: String]) throws {
+        let envContent = content.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+        guard fileManager.createFile(atPath: path, contents: envContent.data(using: .utf8), attributes: nil) else { throw Err.fileCreateFailed.d(path) }
+        print("创建 env 文件: \(path) 成功".succ)
+    }
+
+    static func readEnvFile(at path: String) throws -> [String: String] {
+        guard let content = fileManager.contents(atPath: path),
+              let contentString = String(data: content, encoding: .utf8) else {
+            throw Err.fileCreateFailed.d(path)
+        }
+        
+        var envDict = [String: String]()
+        let lines = contentString.split(separator: "\n")
+        for line in lines {
+            let keyValue = line.split(separator: "=", maxSplits: 1)
+            if keyValue.count == 2 {
+                let key = String(keyValue[0]).trimmingCharacters(in: .whitespaces)
+                let value = String(keyValue[1]).trimmingCharacters(in: .whitespaces)
+                envDict[key] = value
+            }
+        }
+        return envDict
+    }
+
     static func isExist(path: String, dir: Bool = true) -> Bool {
         var isDir: Bool = false
         let exists = fileManager.fileExists(atPath: path, isDirectory: &isDir)
