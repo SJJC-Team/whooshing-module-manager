@@ -137,10 +137,11 @@ struct Sh {
             case pgDbVaildFailed = "PostgreSQL 数据库验证失败"
         }
 
-        static func create(module: String, port: Int, key: String, env: Env) throws {
+        static func create(module: String, port: Int, basePort: Int, key: String, env: Env) throws {
             let res = try run(in: File.sh(.pgCreateService), paras: [
                 "module": module,
-                "port": String(port),
+                "p": String(port),
+                "port_base": String(basePort),
                 "key": key
             ], env: env)
             guard res.code == 0 else { throw Err.pgUnknowError.d(String(data: res.res, encoding: .utf8)!) }
@@ -204,7 +205,7 @@ struct Sh {
                 return dbList
             }
 
-            static func test(port: Int, database: String, key: String, env: Env) throws -> Bool {
+            static func isExist(port: Int, database: String, key: String, env: Env) throws -> Bool {
                 let res = try run(in: File.sh(.pgTestDb), paras: [
                     "port": String(port),
                     "database": database,
@@ -337,5 +338,5 @@ struct FS {
 
 struct Tool {
     static func bakName(name: String) -> String { name + "-" + Date().description }
-    static func portAvailable(port: Int) -> Bool { port > 1 && port < 20 }
+    static func portAvailable(port: Int) -> Bool { port >= 0 && port < 20 }
 }

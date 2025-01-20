@@ -39,11 +39,13 @@ extension Module {
             case pgServiceExist = "PostgreSQL 服务未删除"
             case createModuleFailed = "创建模块失败"
             case deleteModuleFailed = "删除模块失败"
+            case missingModuleConfig = "模块配置异常缺失"
         }   
 
-        static func paraAvailable(module: String, env: Env) throws {
-            let dir = env.dataDir + "/" + module
-            guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
+        static func paraAvailable(module: String, env: Env, depends: Depends) throws -> DBModel.Module {
+            try NoCheck.paraAvailable(module: module, env: env)
+            guard let res = try DBModel.Module.query(on: depends.db).filter(\.$name == module).first().wait() else { throw Err.missingModuleConfig }
+            return res
         }
 
         static func list(env: Env) throws -> [String] {
@@ -55,7 +57,8 @@ extension Module {
         }
 
         static func create(name: String, env: Env, depends: Depends) throws {
-            try NoCheck.create(name: name, env: env)
+            guard let res = try DBModel.Module.query(on: depends.db).filter(\.$name == name).first().wait() else { throw Err.missingModuleConfig }
+            try NoCheck.create(name: name, env: env, basePort: res.startPort)
             do {
                 print("正在更新数据库".info)
                 let res = try DBModel.Module.query(on: depends.db).sort(\.$startPort, .descending).first().wait()
@@ -71,15 +74,19 @@ extension Module {
         }
 
         static func delete(name: String, env: Env, depends: Depends) throws {
-            try NoCheck.delete(name: name, env: env)
+            let res = try paraAvailable(module: name, env: env, depends: depends)
+            try NoCheck.delete(name: name, env: env, basePort: res.startPort)
             print("正在更新数据库".info)
-            let module = try DBModel.Module.query(on: depends.db).filter(\.$name == name).first().wait()
-            guard let module = module else { throw Err.deleteModuleFailed.d("未能找到该模块") }
-            do { try module.delete(force: false, on: depends.db).wait() } catch let err { throw Err.deleteModuleFailed.d(err.localizedDescription) }
+            do { try res.delete(force: false, on: depends.db).wait() } catch let err { throw Err.deleteModuleFailed.d(err.localizedDescription) }
         }
         
         enum NoCheck {
-            static func create(name: String, env: Env) throws {
+            static func paraAvailable(module: String, env: Env) throws {
+                let dir = env.dataDir + "/" + module
+                guard FS.isExist(path: dir, dir: true) == true else { throw Err.moduleNotFound.d(dir) }
+            }
+
+            static func create(name: String, env: Env, basePort: Int) throws {
                 try Sh.Vault.login(env: env)
                 let dir = env.dataDir + "/" + name
                 do {
@@ -88,20 +95,20 @@ extension Module {
                     try FS.setPermissions(path: dir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
                 } catch let err {
                     print("任务失败，正在回退".err)
-                    try delete(name: name, env: env)
+                    try delete(name: name, env: env, basePort: basePort)
                     throw err
                 }
             }
 
-            static func delete(name: String, env: Env) throws {
+            static func delete(name: String, env: Env, basePort: Int) throws {
                 try paraAvailable(module: name, env: env)
                 try Sh.Vault.login(env: env)
                 let dir = env.dataDir + "/" + name
-                let dbs = try PgService.Action.list(module: name,  env: env)
+                let dbs = try PgService.Action.NoCheck.list(module: name,  env: env, basePort: basePort)
                 guard dbs.count == 0 else { 
                     print("该模块还有以下 PostgreSQL 服务模块，请先删除:".warn)
                     for db in dbs { print(db.info) }
-                    throw Err.pgServiceExist 
+                    throw Err.pgServiceExist
                 }
                 let backupName = Tool.bakName(name: name)
                 try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)

@@ -17,10 +17,11 @@ struct DatabaseDepends {
             Sh.isServing(port: port) == false || 
             PgDatabase.Action.list(module: moduleName, port: port, env: env).first(where: { $0.db == Self.database }) == nil
         
-        if needInit { 
+        if needInit {
             print("管理模块未初始化，正在初始化".info)
-            if FS.isExist(path: moduleDir, dir: true) == false { try Module.Action.NoCheck.create(name: moduleName, env: env) }
-            if FS.isExist(path: dataDir, dir: true) == false { try PgService.Action.create(module: moduleName, port: port, env: env) }
+            let basePort = 20000
+            if FS.isExist(path: moduleDir, dir: true) == false { try Module.Action.NoCheck.create(name: moduleName, env: env, basePort: basePort) }
+            if FS.isExist(path: dataDir, dir: true) == false { try PgService.Action.NoCheck.create(module: moduleName, port: port, env: env, basePort: basePort) }
             if try Sh.isServing(port: port) == false { try PgService.Action.restart(module: moduleName, port: port, env: env) }
             if try PgDatabase.Action.list(module: moduleName, port: port, env: env).first(where: { $0.db == Self.database }) == nil { try PgDatabase.Action.create(module: moduleName, port: port, database: database, env: env) }
         }

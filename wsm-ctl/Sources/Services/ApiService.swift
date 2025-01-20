@@ -81,7 +81,7 @@ extension ApiService {
     enum Action {
         enum Err: String, ErrList {
             case portOccupied = "端口被占用"
-            case portNotCorrect = "端口号不正确, 请在 1024 ~ 65535 之间"
+            case portNotCorrect = "端口号不正确, 请在 1 ~ 19 之间"
             case serviceNotFound = "Api 服务不存在"
             case serviceAlreadyExist = "Api 服务已存在"
             case serviceIsRunning = "Api 服务正在运行"
