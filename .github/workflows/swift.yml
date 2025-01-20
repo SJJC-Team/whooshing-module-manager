@@ -19,7 +19,7 @@ jobs:
         path: |
           ~/.swiftpm
           .build
-        key: ${{ runner.os }}-swift-${{ hashFiles('wsm-ctl/Package.swift') }}
+        key: ${{ runner.os }}-swift-${{ hashFiles('./wsm-ctl/Package.swift') }}
         restore-keys: |
           ${{ runner.os }}-swift-
 
