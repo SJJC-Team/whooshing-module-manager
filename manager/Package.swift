@@ -11,7 +11,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent.git", from: "4.9.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
-        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", branch: "develop")
+        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", branch: "1.1.9-developer-clwang-implement-async-protocol-of-data")
     ],
     targets: [
         .executableTarget(

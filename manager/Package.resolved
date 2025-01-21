@@ -1,5 +1,5 @@
 {
-  "originHash" : "3ac37b6ffa7cbb2cebab90578daac89a2fde380d0f0bdf5c5a7d934a8f00296f",
+  "originHash" : "946941bfaf6b0320e8774cd6349e6e8ff01272f75d81f606440aaa2e73c5959b",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -294,8 +294,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SJJC-Team/whooshing.toolbox-basic.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "608a3d676e113d7c57bce12d1c640763f97fb466"
+        "branch" : "1.1.9-developer-clwang-implement-async-protocol-of-data",
+        "revision" : "4b701a2565ad4e768cf607bfc8fbfc32507dfa96"
       }
     }
   ],

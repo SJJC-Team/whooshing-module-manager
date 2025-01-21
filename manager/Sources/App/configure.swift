@@ -2,22 +2,28 @@ import NIOSSL
 import Fluent
 import FluentPostgresDriver
 import Vapor
+import Cryptos
 
-// configures your application
+public enum Whooshing {
+    // 暂时如此设置，用以测试
+    public static let root: Crypto.Symm.Key = Crypto.Symm.makeKey()
+}
+
 public func configure(_ app: Application) async throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+
+    // 仅用做测试，不在生产环境中使用
+    app.http.server.configuration.address = .hostname("0.0.0.0", port: 20000)
 
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
-        hostname: Environment.get("DATABASE_HOST") ?? "localhost",
-        port: Environment.get("DATABASE_PORT").flatMap(Int.init(_:)) ?? SQLPostgresConfiguration.ianaPortNumber,
-        username: Environment.get("DATABASE_USERNAME") ?? "vapor_username",
-        password: Environment.get("DATABASE_PASSWORD") ?? "vapor_password",
-        database: Environment.get("DATABASE_NAME") ?? "vapor_database",
+        hostname: "localhost",
+        port: 20001,
+        username: "woo",
+        // 该密码仅为测试密码，无需担心泄露
+        password: "32cd2b5b85ca2c626eeea519f4183e5f7040845e72ce6271445baad13bb0bfb4",
+        database: "manager",
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
 
-    app.migrations.add(CreateTodo())
-    // register routes
+    app.migrations.add(Module.MIG())
     try routes(app)
 }
