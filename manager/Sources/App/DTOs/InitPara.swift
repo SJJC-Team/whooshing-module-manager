@@ -8,5 +8,5 @@ struct InitParaReq: Content {
 struct InitParaRes: Content {
     let pub: Crypto.Asym.CPublicKey
     let root: Data
-    let modules: [Module.DTO]
+    let modules: [Data]
 }

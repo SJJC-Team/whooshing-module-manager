@@ -17,6 +17,7 @@ struct Manager: RouteCollection {
         let modules = try await Module.query(on: req.db).all()
         let ms = try modules.map { try $0.dto(req: req) }
         let cipherRoot = try Crypto.Symm.encrypt(Whooshing.root, key: sharedKey)
-        return InitParaRes(pub: keyPair.public, root: cipherRoot, modules: ms)
+        let cipherModules = try ms.map { try Crypto.Symm.encrypt($0, key: sharedKey) }
+        return InitParaRes(pub: keyPair.public, root: cipherRoot, modules: cipherModules)
     }
 }
