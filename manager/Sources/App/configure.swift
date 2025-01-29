@@ -10,20 +10,19 @@ public enum Whooshing {
 }
 
 public func configure(_ app: Application) async throws {
-
     // 仅用做测试，不在生产环境中使用
     app.http.server.configuration.address = .hostname("0.0.0.0", port: 20000)
 
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: "localhost",
-        port: 20001,
-        username: "woo",
+        port: 5432,
+        username: "testing",
         // 该密码仅为测试密码，无需担心泄露
-        password: "32cd2b5b85ca2c626eeea519f4183e5f7040845e72ce6271445baad13bb0bfb4",
-        database: "manager",
+        password: "testing",
+        database: "testing",
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
-
+    
     app.migrations.add(Module.MIG())
     try routes(app)
 }
