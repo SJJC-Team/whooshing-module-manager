@@ -16,13 +16,14 @@ public func configure(_ app: Application) async throws {
     app.databases.use(DatabaseConfigurationFactory.postgres(configuration: .init(
         hostname: "localhost",
         port: 5432,
-        username: "testing",
+        username: "woo",
         // 该密码仅为测试密码，无需担心泄露
         password: "testing",
-        database: "testing",
+        database: "postgres",
         tls: .prefer(try .init(configuration: .clientDefault)))
     ), as: .psql)
     
     app.migrations.add(Module.MIG())
+    try await app.autoMigrate()
     try routes(app)
 }

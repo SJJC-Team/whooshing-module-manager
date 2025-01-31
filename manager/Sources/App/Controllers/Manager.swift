@@ -10,8 +10,7 @@ struct Manager: RouteCollection {
     }
 
     @Sendable func getInit(req: Request) async throws -> InitParaRes {
-        let pub = try req.content.decode(InitParaReq.self).pub
-        let pubKey = try Crypto.Asym.CPublicKey(rawRepresentation: pub)
+        let pubKey = try req.content.decode(Crypto.Asym.CPublicKey.self)
         let keyPair = Crypto.Asym.makeCryptoKeyPair()
         let sharedKey = try Crypto.Asym.keyEncapsulate(key: keyPair.private, partyPublic: pubKey, salt: Crypto.hash("manager.shared.key"), info: "")
         let modules = try await Module.query(on: req.db).all()

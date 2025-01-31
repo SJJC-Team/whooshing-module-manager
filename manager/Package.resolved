@@ -1,13 +1,13 @@
 {
-  "originHash" : "946941bfaf6b0320e8774cd6349e6e8ff01272f75d81f606440aaa2e73c5959b",
+  "originHash" : "a71c412bf072a19c8b51e794d48a3919617d9d4fab0aa4975ce7b23c11d6f3c5",
   "pins" : [
     {
       "identity" : "async-http-client",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/async-http-client.git",
       "state" : {
-        "revision" : "2119f0d9cc1b334e25447fe43d3693c0e60e6234",
-        "version" : "1.24.0"
+        "revision" : "60fa3dcfc52d09ed0411e9c4bc99928bf63656bd",
+        "version" : "1.24.2"
       }
     },
     {
@@ -29,21 +29,12 @@
       }
     },
     {
-      "identity" : "fluent",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/fluent.git",
-      "state" : {
-        "revision" : "223b27d04ab2b51c25503c9922eecbcdf6c12f89",
-        "version" : "4.12.0"
-      }
-    },
-    {
       "identity" : "fluent-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/fluent-kit.git",
       "state" : {
-        "revision" : "260eff94b64bed4920fa0a1a61ad42c1003fde6a",
-        "version" : "1.50.0"
+        "revision" : "153c495198ad29508e9c89baf87cbfda798c5338",
+        "version" : "1.50.1"
       }
     },
     {
@@ -195,8 +186,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "ba72f31e11275fc5bf060c966cf6c1f36842a291",
-        "version" : "2.79.0"
+        "revision" : "dff45738d84a53dbc8ee899c306b3a7227f54f89",
+        "version" : "2.80.0"
       }
     },
     {
@@ -231,8 +222,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-transport-services.git",
       "state" : {
-        "revision" : "bbd5e63cf949b7db0c9edaf7a21e141c52afe214",
-        "version" : "1.23.0"
+        "revision" : "3c394067c08d1225ba8442e9cffb520ded417b64",
+        "version" : "1.23.1"
       }
     },
     {
@@ -272,15 +263,6 @@
       }
     },
     {
-      "identity" : "vapor",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/vapor.git",
-      "state" : {
-        "revision" : "eafbca78d0ced81a127c94f3703fc3fc76827963",
-        "version" : "4.111.1"
-      }
-    },
-    {
       "identity" : "websocket-kit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/websocket-kit.git",
@@ -290,12 +272,30 @@
       }
     },
     {
+      "identity" : "whooshing-fluent",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SJJC-Team/whooshing-fluent.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "c271d6c0d738c8a10ab4fb219bea8cd449080cb0"
+      }
+    },
+    {
+      "identity" : "whooshing-vapor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SJJC-Team/whooshing-vapor.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "24f231b79e30509d7cf94b07f67c56caf01d5d8d"
+      }
+    },
+    {
       "identity" : "whooshing.toolbox-basic",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SJJC-Team/whooshing.toolbox-basic.git",
       "state" : {
-        "branch" : "1.1.9-developer-clwang-implement-async-protocol-of-data",
-        "revision" : "f0083c694f61893ac873fff37f944e7894253349"
+        "branch" : "1.1.11-developer-clwang-test-inline-module",
+        "revision" : "a77bceeeefc0601eee54a9889fdbd56aef27d585"
       }
     }
   ],

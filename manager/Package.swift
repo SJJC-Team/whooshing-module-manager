@@ -7,19 +7,19 @@ let package = Package(
        .macOS(.v13)
     ],
     dependencies: [
-        .package(url: "https://github.com/vapor/vapor.git", from: "4.110.1"),
-        .package(url: "https://github.com/vapor/fluent.git", from: "4.9.0"),
+        .package(url: "https://github.com/SJJC-Team/whooshing-vapor.git", branch: "main"),
+        .package(url: "https://github.com/SJJC-Team/whooshing-fluent.git", branch: "main"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
-        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", branch: "1.1.9-developer-clwang-implement-async-protocol-of-data")
+        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", branch: "1.1.11-developer-clwang-test-inline-module")
     ],
     targets: [
         .executableTarget(
             name: "App",
             dependencies: [
-                .product(name: "Fluent", package: "fluent"),
+                .product(name: "Fluent", package: "whooshing-fluent"),
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
-                .product(name: "Vapor", package: "vapor"),
+                .product(name: "Vapor", package: "whooshing-vapor"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "Whooshing", package: "whooshing.toolbox-basic")
@@ -30,7 +30,7 @@ let package = Package(
             name: "AppTests",
             dependencies: [
                 .target(name: "App"),
-                .product(name: "VaporTesting", package: "vapor"),
+                .product(name: "VaporTesting", package: "whooshing-vapor"),
             ],
             swiftSettings: swiftSettings
         )
