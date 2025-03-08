@@ -1,104 +1,115 @@
 import ArgumentParser
 import Foundation
 
-protocol ServiceType {
-    static var serName: String { get }
-    static var cmdName: String { get }
-    static var dataName: String { get }
-}
-
-enum Api: ServiceType {
-    static let serName: String = "API"
-    static let cmdName: String = "api"
-    static let dataName: String = "api"
-}
-
-enum Inline: ServiceType {
-    static let serName: String = "INLINE"
-    static let cmdName: String = "inl"
-    static let dataName: String = "inline"
-}
-
-enum Https: ServiceType {
-    static let serName: String = "HTTPS"
-    static let cmdName: String = "htps"
-    static let dataName: String = "https"
-}
-
-struct Service<SerType: ServiceType>: LCDS {
-    static var name: String { "\(SerType.cmdName)service" }
-    static var shortName: String? { nil }
-    static var paraLabel: String { "端口" }
-    static var help: String { "\(SerType.serName) 网络后端服务" }
-    static var subCmds: [any ParsableCommand.Type] { [L.self, C.self, D.self, S.self, Restart.self, Start.self] }
+struct WebService: LCDS {
+    
+    enum ServiceType: String, ExpressibleByArgument {
+        case api = "API_SERVICETYPE"
+        case https = "HTTPS_SERVICETYPE"
+        case inline = "INLINE_SERVICETYPE"
+    }
+    
+    static let name = "webservice"
+    static let shortName: String? = nil
+    static let paraLabel = "端口"
+    static let help = "网络后端服务"
+    static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self, S.self, Restart.self, Start.self]
 
     struct L: List {
-        typealias Super = Service<SerType>
+        typealias Super = WebService
         @Argument(help: "模块名称") var module: String
         func cmd(env: Env, depends: Depends) throws -> [String] { 
             let dirs = try Action.list(module: module, env: env) 
             let isEmpty = dirs.isEmpty
-            if isEmpty { print("无 \(SerType.serName) 服务".info) }
+            if isEmpty { print("无 Web 服务".info) }
             else { for dir in dirs { print(dir.info) } }
             return dirs
         }
     }
     
     struct C: Create {
-        typealias Super = Service<SerType>
+        typealias Super = WebService
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, help: "该 \(SerType.serName) 服务将用于监听的端口号") var port: Int
+        @Argument(help: "该 Web 服务的名称") var name: String
         @Option(name: .shortAndLong, help: "运行该服务的可执行文件包") var bundle: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "该 \(SerType.serName) 服务连接的数据库端口号") var databasePorts: [Int]
-        var paras: [Int] { [port] }
-        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { 
-            try Action.create(module: module, port: port, bundle: bundle, dbPorts: databasePorts, env: env, depends: depends) 
+        
+        @Argument(help: "INLINE 服务的端口号") var inlinePort: Int
+        @Argument(help: "API 服务的端口号") var apiPort: Int?
+        @Argument(help: "HTTPS 服务的端口号") var httpsPort: Int?
+        
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API 服务连接的数据库端口号列表") var apiDbPorts: [Int]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "INLINE 服务连接的数据库端口号列表") var inlineDbPorts: [Int]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "HTTPS 服务连接的数据库端口号列表") var httpsDbPorts: [Int]
+        
+        struct Paras {
+            let serviceType: ServiceType
+            let port: Int
+            let dbPorts: [Int]
+        }
+        
+        var paras: [String] { [bundle] }
+        func one(para name: String, i: Int, env: Env, depends: Depends) throws {
+            let paras: [Paras] = ([.api: apiPort, .inline: inlinePort, .https: httpsPort].compactMapValues { $0 } as [ServiceType: Int]).map { type, port in
+                let ports: [Int]
+                switch type {
+                    case .api: ports = apiDbPorts
+                    case .inline: ports = inlineDbPorts
+                    case .https: ports = httpsDbPorts
+                }
+                return .init(serviceType: type, port: port, dbPorts: ports)
+            }
+            try Action.create(
+                module: module,
+                name: name,
+                serviceParas: paras,
+                bundle: bundle,
+                env: env,
+                depends: depends)
         }
     }
     
     struct D: Delete {
-        typealias Super = Service<SerType>
+        typealias Super = WebService
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
-        var paras: [Int] { ports }
-        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.delete(module: module, port: port, env: env, depends: depends) }
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "Web 服务的名称") var name: [String]
+        var paras: [String] { name }
+        func one(para name: String, i: Int, env: Env, depends: Depends) throws { try Action.delete(module: module, name: name, env: env, depends: depends) }
     }
     
     struct S: Stop {
-        typealias Super = Service<SerType>
-
+        typealias Super = WebService
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
-        var paras: [Int] { ports }
-        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.stop(module: module, port: port, env: env, depends: depends) }
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "Web 服务的名称") var name: [String]
+        var paras: [String] { name }
+        func one(para name: String, i: Int, env: Env, depends: Depends) throws { try Action.stop(module: module, name: name, env: env, depends: depends) }
     }
 
     struct Restart: LCDExpand {
-        typealias Super = Service<SerType>
+        typealias Super = WebService
         static var name: String { "restart" }
         static var shortName: String? { "resta" }
         static var help: String { "重启 " }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
-        var paras: [Int] { ports }
-        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.restart(module: module, port: port, env: env, depends: depends) }
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "Web 服务的名称") var name: [String]
+        var paras: [String] { name }
+        func one(para name: String, i: Int, env: Env, depends: Depends) throws { try Action.restart(module: module, name: name, env: env, depends: depends) }
     }
 
     struct Start: LCDExpand {
-        typealias Super = Service<SerType>
+        typealias Super = WebService
         static var name: String { "start" }
         static var shortName: String? { "sta" }
         static var help: String { "启动 " }
 
         @Argument(help: "模块名称") var module: String
-        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "\(SerType.serName)(s) 服务的监听端口号") var ports: [Int]
-        var paras: [Int] { ports }
-        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.start(module: module, port: port, env: env, depends: depends) }
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "Web 服务的名称") var name: [String]
+        var paras: [String] { name }
+        func one(para name: String, i: Int, env: Env, depends: Depends) throws { try Action.start(module: module, name: name, env: env, depends: depends) }
     }
 }
 
-extension Service {
+extension WebService {
     enum Action {
         enum Err: String, ErrList {
             case portOccupied = "端口被占用"
@@ -111,52 +122,51 @@ extension Service {
             case pgServiceNotRunning = "PostgreSQL 服务未运行"
         }
 
-        static func paraAvailable(module: String, port: Int, env: Env, depends: Depends) throws -> DBModel.Module {
+        static func paraAvailable(module: String, name: String, env: Env, depends: Depends) throws -> DBModel.Module {
             let model = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
-            try NoCheck.paraAvailable(module: module, port: port, env: env)
+            try NoCheck.paraAvailable(module: module, name: name, env: env)
             return model
         }
 
         static func list(module: String, env: Env) throws -> [String] {
             try Module.Action.NoCheck.paraAvailable(module: module, env: env)
-            let moduleDir = "\(env.dataDir)/\(module)/"
+            let moduleDir = "\(env.dataDir)/\(module)/web/"
             try FS.mkdir(path: moduleDir, slience: true, withIntermediates: true, output: false)
-            let dirs = try FS.ls(path: moduleDir, dir: true, hiddenFile: false).filter { $0.hasPrefix("\(SerType.dataName)-") }
+            let dirs = try FS.ls(path: moduleDir, dir: true, hiddenFile: false)
             return dirs
         }
         
-        static func create(module: String, port: Int, bundle: String, dbPorts: [Int], env: Env, depends: Depends) throws {
+        static func create(module: String, name: String, serviceParas: [C.Paras], bundle: String, env: Env, depends: Depends) throws {
             let model = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
-            try NoCheck.create(module: module, port: port, bundle: bundle, dbPorts: dbPorts, env: env, dbModule: model)
+            try NoCheck.create(module: module, name: name, serviceParas: serviceParas, bundle: bundle, env: env, dbModule: model)
         }
 
-        static func delete(module: String, port: Int, env: Env, depends: Depends) throws {
-            let model = try paraAvailable(module: module, port: port, env: env, depends: depends)
-            try NoCheck.delete(module: module, port: port, env: env, basePort: model.startPort)
+        static func delete(module: String, name: String, env: Env, depends: Depends) throws {
+            let model = try paraAvailable(module: module, name: name, env: env, depends: depends)
+            try NoCheck.delete(module: module, name: name, env: env, basePort: model.startPort)
         }
 
-        static func restart(module: String, port: Int, env: Env, depends: Depends) throws {
+        static func restart(module: String, name: String, env: Env, depends: Depends) throws {
             let model = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
-            try NoCheck.start(module: module, port: port, env: env, dbModule: model)
+            try NoCheck.start(module: module, name: name, env: env, dbModule: model)
         }
 
-        static func start(module: String, port: Int, env: Env, depends: Depends) throws {
+        static func start(module: String, name: String, env: Env, depends: Depends) throws {
             let model = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
-            try NoCheck.start(module: module, port: port, env: env, dbModule: model)
+            try NoCheck.start(module: module, name: name, env: env, dbModule: model)
         }
 
-        static func stop(module: String, port: Int, env: Env, depends: Depends) throws {
+        static func stop(module: String, name: String, env: Env, depends: Depends) throws {
             let model = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
-            try NoCheck.stop(module: module, port: port, env: env, dbModule: model)
+            try NoCheck.stop(module: module, name: name, env: env, dbModule: model)
         }
 
         struct NoCheck {
 
-            static func paraAvailable(module: String, port: Int, env: Env) throws {
+            static func paraAvailable(module: String, name: String, env: Env) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 let moduleDir = env.dataDir + "/" + module
-                let dataDir = "\(moduleDir)/\(SerType.dataName)-\(port)"
-                guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
+                let dataDir = moduleDir + "/web/" + name
                 guard FS.isExist(path: dataDir, dir: true) == true else { throw Err.serviceNotFound.d(dataDir) }
             }
 
@@ -166,82 +176,88 @@ extension Service {
                     if k.contains("PORT") { let dp = Int(v)!; paras[k] = String(module.startPort + dp) }
                     else if k.contains("PASSWORD") { paras[k] = try Sh.Vault.getKey(in: v, env: env) }
                 }
-                paras["WHOOSHING_\(SerType.serName)_SERVICE_MANAGER_URL"] = "http://localhost:20000"
-                if SerType.self == Inline.self { paras["WHOOSHING_INLINE_SERVICE_PRIVATE_SERVICE_ID"] = module.serviceId.uuidString }
+                for envName in [
+                    "WHOOSHING_API_SERVICE_MANAGER_URL",
+                    "WHOOSHING_INLINE_SERVICE_MANAGER_URL",
+                    "WHOOSHING_HTTPS_SERVICE_MANAGER_URL",
+                ] {
+                    paras[envName] = "http://localhost:20000"
+                }
+                paras["WHOOSHING_INLINE_SERVICE_PRIVATE_SERVICE_ID"] = module.serviceId.uuidString
+                paras["WHOOSHING_API_SERVICE_PRIVATE_AUTHENTICATION_URL"] = "http://localhost:20001"
                 return paras
             }
 
-            static func create(module: String, port: Int, bundle: String, dbPorts: [Int], env: Env, dbModule: DBModel.Module) throws {
+            static func create(module: String, name: String, serviceParas: [C.Paras], bundle: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
-
                 let moduleDir = "\(env.dataDir)/\(module)"
-                let dataDir = "\(moduleDir)/\(SerType.dataName)-\(port)"
+                let dataDir = "\(moduleDir)/web/\(name)"
                 let envFile = "\(dataDir)/.env"
-                let p = dbModule.startPort + port
-
-                guard Tool.portAvailable(port: port) else { throw Err.portNotCorrect.d(String(port)) }
-                guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
-                guard try !Sh.isServing(port: p) else { throw Err.portOccupied.d("\(p)[\(dbModule.startPort) + \(port)]") }
-                
-                var paras: [String: String] = [:]
-                paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_COUNT"] = String(dbPorts.count)
-                paras["WHOOSHING_\(SerType.serName)_SERVICE_NAME"] = "\(SerType.serName)Service-\(port)"
-                paras["WHOOSHING_\(SerType.serName)_SERVICE_PORT"] = String(port)
-                for (i, dp) in dbPorts.enumerated() {
-                    let dbp = dbModule.startPort + dp
-                    guard try Sh.isServing(port: dbp) else { throw Err.pgServiceNotRunning.d(String(dbp)) }
-                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_NAME"] = "PGDatabase-\(dp)"
-                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_PORT"] = String(dp)
-                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_USER"] = "woo"
-                    paras["WHOOSHING_\(SerType.serName)_SERVICE_DB_\(i + 1)_PASSWORD"] = "\(module)/\(dp)/role/woo"
+                var envParas: [String: String] = [:]
+                for serPara in serviceParas {
+                    let p = dbModule.startPort + serPara.port
+                    guard Tool.portAvailable(port: serPara.port) else { throw Err.portNotCorrect.d(String(serPara.port)) }
+                    guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
+                    guard try !Sh.isServing(port: p) else { throw Err.portOccupied.d("\(p)[\(dbModule.startPort) + \(serPara.port)]") }
+                    
+                    let envPrefix = "WHOOSHING_\(serPara.serviceType)_SERVICE"
+                    envParas[envPrefix + "_DB_COUNT"] = String(serPara.dbPorts.count)
+                    envParas[envPrefix + "_NAME"] = "\(serPara.serviceType)Service-\(serPara.port)"
+                    envParas[envPrefix + "_PORT"] = String(serPara.port)
+                    for (i, dp) in serPara.dbPorts.enumerated() {
+                        let dbp = dbModule.startPort + dp
+                        guard try Sh.isServing(port: dbp) else { throw Err.pgServiceNotRunning.d(String(dbp)) }
+                        envParas["\(envPrefix)_DB_\(i + 1)_NAME"] = "PGDatabase-\(dp)"
+                        envParas["\(envPrefix)_DB_\(i + 1)_PORT"] = String(dp)
+                        envParas["\(envPrefix)_DB_\(i + 1)_USER"] = "woo"
+                        envParas["\(envPrefix)_DB_\(i + 1)_PASSWORD"] = "\(module)/\(dp)/role/woo"
+                    }
                 }
-
                 do {
-                    try FS.createEnvFile(at: envFile, with: paras)
+                    try FS.createEnvFile(at: envFile, with: envParas)
                     try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
-                    try FS.setPermissions(path: dataDir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
                     try FS.cp(path: bundle, to: dataDir)
-                    try start(module: module, port: port, env: env, dbModule: dbModule)
+                    try FS.setPermissions(path: dataDir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
+                    try start(module: module, name: name, env: env, dbModule: dbModule)
                 } catch let err {
                     print("任务失败，正在回退")
-                    try? stop(module: module, port: port, env: env, dbModule: dbModule)
-                    try? delete(module: module, port: port, env: env, basePort: dbModule.startPort)
+                    try? stop(module: module, name: name, env: env, dbModule: dbModule)
+                    try? delete(module: module, name: name, env: env, basePort: dbModule.startPort)
                     throw err
                 }
             }
 
-            static func delete(module: String, port: Int, env: Env, basePort: Int) throws {
-                try paraAvailable(module: module, port: port, env: env)
+            static func delete(module: String, name: String, env: Env, basePort: Int) throws {
+                try paraAvailable(module: module, name: name, env: env)
                 let moduleDir = "\(env.dataDir)/\(module)"
-                let dataDir = "\(moduleDir)/\(SerType.dataName)-\(port)"
+                let dataDir = "\(moduleDir)/web/\(name)"
                 let envFile = "\(dataDir)/.env"
-                let p = basePort + port
-                guard !(try Sh.isServing(port: p)) else { throw Err.serviceIsRunning.d("\(p)[\(basePort) + \(port)], 您不能删除正在运行的服务") }
+                guard !(try Sh.PM2.isServing(name: name, env: env)) else { throw Err.serviceIsRunning.d("\(name), 您不能删除正在运行的服务") }
                 try FS.rm(path: envFile)
                 try FS.mkdir(path: moduleDir + "/.trash", slience: true, withIntermediates: true)
-                let backupName = Tool.bakName(name: String(port))
+                let backupName = Tool.bakName(name: name)
                 try FS.mv(path: dataDir, to: moduleDir + "/.trash/" + backupName)
             }
 
-            static func restart(module: String, port: Int, env: Env, dbModule: DBModel.Module) throws {
+            static func restart(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
-                let dataDir = "\(env.dataDir)/\(module)/\(SerType.dataName)-\(port)"
+                let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
                 try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", args: paras, env: env)
             }
 
-            static func start(module: String, port: Int, env: Env, dbModule: DBModel.Module) throws {
+            static func start(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
-                guard try !Sh.isServing(port: dbModule.startPort + port) else { throw Err.serviceIsRunning.d("\(dbModule.startPort + port)[\(dbModule.startPort) + \(port)]") }
-                let dataDir = "\(env.dataDir)/\(module)/\(SerType.dataName)-\(port)"
+                guard try !Sh.PM2.isServing(name: name, env: env) else { throw Err.serviceIsRunning.d(name) }
+                let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
                 try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", args: paras, env: env)
             }
 
-            static func stop(module: String, port: Int, env: Env, dbModule: DBModel.Module) throws {
+            static func stop(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
-                guard try Sh.isServing(port: dbModule.startPort + port) else { throw Err.serviceIsNotRunning.d("\(dbModule.startPort + port)[\(dbModule.startPort) + \(port)]") }
-                let dataDir = "\(env.dataDir)/\(module)/\(SerType.dataName)-\(port)"
+                guard try Sh.PM2.isServing(name: name, env: env) else { throw Err.serviceIsNotRunning.d(name) }
+                let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 try Sh.PM2.stop(configFile: "\(dataDir)/pm2.config.json", env: env)
             }
         }

@@ -2,9 +2,7 @@ extension Yaml.MODULE {
     func create(env: Env, depends: Depends) throws { 
         try Module.Action.create(name: name, env: env, depends: depends)
         try self.pgsql.forEach { try $0.create(module: name, env: env, depends: depends) }
-        try self.api.forEach { try $0.create(module: name, env: env, depends: depends) }
-        try self.inline.forEach { try $0.create(module: name, env: env, depends: depends) }
-        try self.https.forEach { try $0.create(module: name, env: env, depends: depends) }
+        try self.serviceBundles.forEach { try $0.create(module: name, inline: self.sharedInline, env: env, depends: depends) }
     }
 }
 
@@ -15,20 +13,12 @@ extension Yaml.PGSQL {
     }
 }
 
-extension Yaml.API {
-    func create(module: String, env: Env, depends: Depends) throws {
-        try Service<Api>.Action.create(module: module, port: port, bundle: bundle, dbPorts: pgDatabasePorts, env: env, depends: depends)
-    }
-}
-
-extension Yaml.INLINE {
-    func create(module: String, env: Env, depends: Depends) throws {
-        try Service<Inline>.Action.create(module: module, port: port, bundle: bundle, dbPorts: pgDatabasePorts, env: env, depends: depends)
-    }
-}
-
-extension Yaml.HTTPS {
-    func create(module: String, env: Env, depends: Depends) throws {
-        try Service<Https>.Action.create(module: module, port: port, bundle: bundle, dbPorts: pgDatabasePorts, env: env, depends: depends)
+extension Yaml.SERVICE_BUNDLE {
+    func create(module: String, inline: Yaml.INLINE, env: Env, depends: Depends) throws {
+        var serParas: [WebService.C.Paras] = []
+        serParas.append(WebService.C.Paras(serviceType: .inline, port: inline.port, dbPorts: inline.pgDatabasePorts))
+        if let apiSer = api { serParas.append(WebService.C.Paras(serviceType: .api, port: apiSer.port, dbPorts: apiSer.pgDatabasePorts)) }
+        if let httpsSer = https { serParas.append(WebService.C.Paras(serviceType: .https, port: httpsSer.port, dbPorts: httpsSer.pgDatabasePorts)) }
+        try WebService.Action.create(module: module, name: name, serviceParas: serParas, bundle: path, env: env, depends: depends)
     }
 }

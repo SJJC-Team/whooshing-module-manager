@@ -20,6 +20,7 @@ extension Yaml {
         case stringArr
         case intArr
         case dataTemplate(DataTemplate.Type)
+        case dataTemplateList(DataTemplate.Type)
     }
 
     protocol DataTemplate {
@@ -33,18 +34,16 @@ extension Yaml {
         var name: String = ""
         var domain: String? = nil
         var pgsql: [PGSQL] = []
-        var api: [API] = []
-        var inline: [INLINE] = []
-        var https: [HTTPS] = []
-        static let paras: [String: Types] = [ "#domain": .string, "pgsql": .dataTemplate(PGSQL.self), "api": .dataTemplate(API.self), "inline": .dataTemplate(INLINE.self), "https": .dataTemplate(HTTPS.self) ]
+        var sharedInline: INLINE = .init()
+        var serviceBundles: [SERVICE_BUNDLE] = []
+        static let paras: [String: Types] = [ "#domain": .string, "pgsql": .dataTemplateList(PGSQL.self), "shared_inline_module": .dataTemplate(INLINE.self), "service_bundles": .dataTemplateList(SERVICE_BUNDLE.self)]
         init() {}
         init(data: [String: Any], name: String) {
             self.name = name
             self.domain = data["domain"] as? String
             self.pgsql = data["pgsql"] as! [PGSQL]
-            self.api = data["api"] as! [API]
-            self.inline = data["inline"] as! [INLINE]
-            self.https = data["https"] as! [HTTPS]
+            self.sharedInline = data["shared_inline_module"] as! INLINE
+            self.serviceBundles = data["service_bundles"] as! [SERVICE_BUNDLE]
         }
     }
 
@@ -60,53 +59,56 @@ extension Yaml {
             self.port = data["port"] as! Int
         }
     }
-
-    struct API: DataTemplate {
-        var name: String = ""
+    
+    struct INLINE: DataTemplate {
         var pgDatabasePorts: [Int] = []
         var port: Int = 0
-        var domain: String? = nil
-        var bundle: String = ""
-        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string, "bundle": .string ]
+        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int ]
         init() {}
-        init(data: [String: Any], name: String) {
-            self.name = name
+        init(data: [String : Any], name: String) {
             self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
             self.port = data["port"] as! Int
-            self.domain = data["domain"] as? String
-            self.bundle = data["bundle"] as! String
         }
     }
-
-    struct INLINE: DataTemplate {
+    
+    struct SERVICE_BUNDLE: DataTemplate {
         var name: String = ""
-        var pgDatabasePorts: [Int] = []
-        var port: Int = 0
-        var bundle: String = ""
-        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "bundle": .string ]
+        var api: API? = nil
+        var https: HTTPS? = nil
+        var path: String = ""
+        static let paras: [String : Types] = [ "#api": .dataTemplate(API.self), "#https": .dataTemplate(HTTPS.self), "path": .string ]
         init() {}
         init(data: [String : Any], name: String) {
             self.name = name
+            self.api = data["api"] as? API
+            self.https = data["https"] as? HTTPS
+            self.path = data["path"] as! String
+        }
+    }
+
+    struct API: DataTemplate {
+        var pgDatabasePorts: [Int] = []
+        var port: Int = 0
+        var domain: String? = nil
+        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string ]
+        init() {}
+        init(data: [String: Any], name: String) {
             self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
             self.port = data["port"] as! Int
-            self.bundle = data["bundle"] as! String
+            self.domain = data["domain"] as? String
         }
     }
 
     struct HTTPS: DataTemplate {
-        var name: String = ""
         var pgDatabasePorts: [Int] = []
         var port: Int = 0
         var domain: String? = nil
-        var bundle: String = ""
-        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string, "bundle": .string ]
+        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string]
         init() {}
         init(data: [String: Any], name: String) {
-            self.name = name
             self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
             self.port = data["port"] as! Int
             self.domain = data["domain"] as? String
-            self.bundle = data["bundle"] as! String
         }
     }
 
@@ -120,15 +122,27 @@ extension Yaml {
 extension Yaml.DataTemplate {
     static func parse(data: [String: Any], name: String, keyPath: String) throws -> Self {
         var values = data
-        for (k, v) in Self.paras {
-            if k.hasPrefix("#") { continue }
-            guard let value = data[k] else { throw Yaml.Err.missingKey.d("\(keyPath)/\(k)") }
+        for (envKey, v) in Self.paras {
+            let value: Any
+            let k: String
+            if envKey.hasPrefix("#") {
+                k = String(envKey.dropFirst())
+                guard let envValue = data[k] else { continue }
+                value = envValue
+            } else {
+                k = envKey
+                guard let envValue = data[k] else { throw Yaml.Err.missingKey.d("\(keyPath)/\(k)") }
+                value = envValue
+            }
             switch v {
                 case .string: guard let _ = value as? String else { throw Yaml.Err.typeIncorrect.d("\(keyPath)/\(k), 预期为 String, 得到 \(type(of: value))") }
                 case .int: guard let _ = value as? Int else { throw Yaml.Err.typeIncorrect.d("\(keyPath)/\(k), 预期为 Int, 得到 \(type(of: value))") }
                 case .stringArr: guard let _ = value as? [String] else { throw Yaml.Err.typeIncorrect.d("\(keyPath)/\(k), 预期为 [String], 得到 \(type(of: value))") }
                 case .intArr: guard let _ = value as? [Int] else { throw Yaml.Err.typeIncorrect.d("\(keyPath)/\(k), 预期为 [Int], 得到 \(type(of: value))") }
-                case .dataTemplate(let template): 
+                case .dataTemplate(let template):
+                    guard let d = value as? [String: Any] else { throw Yaml.Err.typeIncorrect.d("\(keyPath)/\(k), 预期为 Dictionary, 得到 \(type(of: value))") }
+                    values[k] = try template.parse(data: d, name: "", keyPath: "\(keyPath)/\(k)")
+                case .dataTemplateList(let template):
                     guard let d = value as? [String: [String: Any]] else { throw Yaml.Err.typeIncorrect.d("\(keyPath)/\(k), 预期为 Dictionary<Dictionary>, 得到 \(type(of: value))") }
                     values[k] = try d.map { try template.parse(data: $0.value, name: $0.key, keyPath: "\(keyPath)/\(k)/\($0.key)") }
             }

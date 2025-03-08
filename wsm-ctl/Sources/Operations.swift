@@ -248,6 +248,11 @@ struct Sh {
             guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
             print("PM2 停止服务成功".succ)
         }
+        
+        static func isServing(name: String, env: Env) throws -> Bool {
+            let res = try run("pm2 show \(name)", env: env)
+            return res.code == 0
+        }
     }
 
     static func isServing(port: Int) throws -> Bool {

@@ -8,20 +8,17 @@ testing1:
         "pg2":
             database: "testing2"
             port: 10
-    api:
-        "default":
-            port: 1
-            pgDatabasePorts: [0, 10]
-            domain: "api"
-            bundle: "Path to bundle"
-    inline:
-        "default":
-            port: 2
-            pgDatabasePorts: [0, 10]
-            bundle: "Path to bundle"
-    https:
-        "test":
-            port: 3
-            pgDatabasePorts: [0]
-            domain: "web"
-            bundle: "Path to bundle"
+    service_bundles:
+        service1:
+            api:
+                port: 1
+                pgDatabasePorts: [0, 10]
+                domain: "api"
+            https:
+                port: 3
+                pgDatabasePorts: [0]
+                domain: "web"
+            path: "Path to bundle"
+    shared_inline_module:
+        port: 2
+        pgDatabasePorts: [0, 10]
