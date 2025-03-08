@@ -4,9 +4,9 @@ import Foundation
 struct WebService: LCDS {
     
     enum ServiceType: String, ExpressibleByArgument {
-        case api = "API_SERVICETYPE"
-        case https = "HTTPS_SERVICETYPE"
-        case inline = "INLINE_SERVICETYPE"
+        case api = "API"
+        case https = "HTTPS"
+        case inline = "INLINE"
     }
     
     static let name = "webservice"
@@ -36,27 +36,33 @@ struct WebService: LCDS {
         @Argument(help: "INLINE 服务的端口号") var inlinePort: Int
         @Argument(help: "API 服务的端口号") var apiPort: Int?
         @Argument(help: "HTTPS 服务的端口号") var httpsPort: Int?
-        
+
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API 服务连接的数据库端口号列表") var apiDbPorts: [Int]
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "INLINE 服务连接的数据库端口号列表") var inlineDbPorts: [Int]
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "HTTPS 服务连接的数据库端口号列表") var httpsDbPorts: [Int]
+
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API 服务连接的数据库名称") var apiDbNames: [String]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "INLINE 服务连接的数据库名称") var inlineDbNames: [String]
+        @Option(name: .shortAndLong, parsing: .upToNextOption, help: "HTTPS 服务连接的数据库名称") var httpsDbNames: [String]
         
         struct Paras {
             let serviceType: ServiceType
             let port: Int
             let dbPorts: [Int]
+            let dbNames: [String]
         }
         
         var paras: [String] { [bundle] }
         func one(para name: String, i: Int, env: Env, depends: Depends) throws {
             let paras: [Paras] = ([.api: apiPort, .inline: inlinePort, .https: httpsPort].compactMapValues { $0 } as [ServiceType: Int]).map { type, port in
                 let ports: [Int]
+                let names: [String]
                 switch type {
-                    case .api: ports = apiDbPorts
-                    case .inline: ports = inlineDbPorts
-                    case .https: ports = httpsDbPorts
+                    case .api: ports = apiDbPorts; names = apiDbNames
+                    case .inline: ports = inlineDbPorts; names = inlineDbNames
+                    case .https: ports = httpsDbPorts; names = httpsDbNames
                 }
-                return .init(serviceType: type, port: port, dbPorts: ports)
+                return .init(serviceType: type, port: port, dbPorts: ports, dbNames: names)
             }
             try Action.create(
                 module: module,
@@ -200,27 +206,27 @@ extension WebService {
                     guard FS.isExist(path: dataDir, dir: true) == false else { throw Err.serviceAlreadyExist.d(dataDir) }
                     guard try !Sh.isServing(port: p) else { throw Err.portOccupied.d("\(p)[\(dbModule.startPort) + \(serPara.port)]") }
                     
-                    let envPrefix = "WHOOSHING_\(serPara.serviceType)_SERVICE"
+                    let envPrefix = "WHOOSHING_\(serPara.serviceType.rawValue.uppercased())_SERVICE"
                     envParas[envPrefix + "_DB_COUNT"] = String(serPara.dbPorts.count)
                     envParas[envPrefix + "_NAME"] = "\(serPara.serviceType)Service-\(serPara.port)"
                     envParas[envPrefix + "_PORT"] = String(serPara.port)
                     for (i, dp) in serPara.dbPorts.enumerated() {
                         let dbp = dbModule.startPort + dp
                         guard try Sh.isServing(port: dbp) else { throw Err.pgServiceNotRunning.d(String(dbp)) }
-                        envParas["\(envPrefix)_DB_\(i + 1)_NAME"] = "PGDatabase-\(dp)"
+                        envParas["\(envPrefix)_DB_\(i + 1)_NAME"] = serPara.dbNames[i]
                         envParas["\(envPrefix)_DB_\(i + 1)_PORT"] = String(dp)
                         envParas["\(envPrefix)_DB_\(i + 1)_USER"] = "woo"
                         envParas["\(envPrefix)_DB_\(i + 1)_PASSWORD"] = "\(module)/\(dp)/role/woo"
                     }
                 }
                 do {
-                    try FS.createEnvFile(at: envFile, with: envParas)
                     try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
+                    try FS.createEnvFile(at: envFile, with: envParas)
                     try FS.cp(path: bundle, to: dataDir)
                     try FS.setPermissions(path: dataDir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
                     try start(module: module, name: name, env: env, dbModule: dbModule)
                 } catch let err {
-                    print("任务失败，正在回退")
+                    print("任务失败，正在回退".err)
                     try? stop(module: module, name: name, env: env, dbModule: dbModule)
                     try? delete(module: module, name: name, env: env, basePort: dbModule.startPort)
                     throw err
@@ -243,7 +249,7 @@ extension WebService {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
-                try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", args: paras, env: env)
+                try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", args: paras, cwd: dataDir, env: env)
             }
 
             static func start(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
@@ -251,14 +257,14 @@ extension WebService {
                 guard try !Sh.PM2.isServing(name: name, env: env) else { throw Err.serviceIsRunning.d(name) }
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
-                try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", args: paras, env: env)
+                try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", args: paras, cwd: dataDir, env: env)
             }
 
             static func stop(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 guard try Sh.PM2.isServing(name: name, env: env) else { throw Err.serviceIsNotRunning.d(name) }
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
-                try Sh.PM2.stop(configFile: "\(dataDir)/pm2.config.json", env: env)
+                try Sh.PM2.stop(configFile: "\(dataDir)/pm2.config.json", cwd: dataDir, env: env)
             }
         }
     }

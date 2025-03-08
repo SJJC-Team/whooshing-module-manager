@@ -112,10 +112,7 @@ extension PgService {
 
         static func stop(module: String, port: Int, env: Env, depends: Depends) throws {
             let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
-            let p = res.startPort + port
-            guard try Sh.isServing(port: p) else { throw Err.serviceIsNotRunning.d("\(p)[\(res.startPort) + \(port)]") }
-            let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
-            try Sh.PG.stop(dataDir: dataDir, env: env)
+            try NoCheck.stop(module: module, port: port, env: env, basePort: res.startPort)
         }
 
         static func start(module: String, port: Int, env: Env, depends: Depends) throws {
@@ -165,7 +162,8 @@ extension PgService {
                     try Sh.PG.create(module: module, port: port, basePort: basePort, key: key, env: env)
                     try Sh.PG.restart(dataDir: dataDir, env: env)
                 } catch let err {
-                    print("任务失败，正在回退")
+                    print("任务失败，正在回退".err)
+                    try? stop(module: module, port: port, env: env, basePort: basePort)
                     try? delete(module: module, port: port, env: env, basePort: basePort)
                     throw err
                 }
@@ -183,6 +181,14 @@ extension PgService {
                 try? Sh.PG.stop(dataDir: dataDir, env: env)
                 try FS.mkdir(path: perconaDir + "/.trash", slience: true, withIntermediates: true)
                 try FS.mv(path: dataDir, to: perconaDir + "/.trash/" + backupName)
+            }
+
+            static func stop(module: String, port: Int, env: Env, basePort: Int) throws {
+                try paraAvailable(module: module, port: port, env: env)
+                let p = basePort + port
+                guard try Sh.isServing(port: p) else { throw Err.serviceIsNotRunning.d("\(p)[\(basePort) + \(port)]") }
+                let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
+                try Sh.PG.stop(dataDir: dataDir, env: env)
             }
         }
     }
