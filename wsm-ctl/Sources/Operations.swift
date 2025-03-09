@@ -25,6 +25,7 @@ struct Sh {
             case pgCreateDb = "pg_create_db"
             case pgDeleteDb = "pg_delete_db"
             case pgTestDb = "pg_test_db"
+            case pm2IsServing = "pm2_is_serving"
         }
 
         static func sh(_ shell: Shell) throws -> String {
@@ -227,11 +228,12 @@ struct Sh {
             case pm2StartFailed = "PM2 启动失败"
             case pm2StopFailed = "PM2 停止失败"
             case pm2RestartFailed = "PM2 重启失败"
+            case pm2DeleteFailed = "PM2 删除失败"
         }
 
         static func restart(configFile: String, args: [String: String], cwd: String, env: Env) throws {
             let res = try run("pm2 restart \(configFile) --cwd \(cwd)", paras: args, env: env)
-            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            guard res.code == 0 else { throw Err.pm2RestartFailed.d(String(data: res.res, encoding: .utf8)!) }
             print("PM2 重启服务成功".succ)
         }
 
@@ -243,12 +245,19 @@ struct Sh {
 
         static func stop(configFile: String, cwd: String, env: Env) throws {
             let res = try run("pm2 stop \(configFile) --cwd \(cwd)", env: env)
-            guard res.code == 0 else { throw Err.pm2StartFailed.d(String(data: res.res, encoding: .utf8)!) }
+            guard res.code == 0 else { throw Err.pm2StopFailed.d(String(data: res.res, encoding: .utf8)!) }
             print("PM2 停止服务成功".succ)
+        }
+
+        static func delete(configFile: String, cwd: String, env: Env) throws {
+            let res = try run("pm2 delete \(configFile) --cwd \(cwd)", env: env)
+            guard res.code == 0 else { throw Err.pm2DeleteFailed.d(String(data: res.res, encoding: .utf8)!) }
+            print("PM2 删除服务成功".succ)
         }
         
         static func isServing(name: String, env: Env) throws -> Bool {
-            let res = try run("pm2 show \(name)", env: env)
+            let res = try run(in: File.sh(.pm2IsServing), paras: ["service_name": name], env: env)
+            print(String(data: res.res, encoding: .utf8)!)
             return res.code == 0
         }
     }
