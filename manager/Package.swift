@@ -11,7 +11,7 @@ let package = Package(
         .package(url: "https://github.com/SJJC-Team/whooshing-fluent.git", branch: "main"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.65.0"),
-        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", branch: "1.1.11-developer-clwang-test-inline-module")
+        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", branch: "1.1.11-developer-clwang-api-module"),
     ],
     targets: [
         .executableTarget(
@@ -24,7 +24,7 @@ let package = Package(
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "Whooshing", package: "whooshing.toolbox-basic")
             ],
-            swiftSettings: swiftSettings
+            swiftSettings: swiftSettings + ["HTTPS"].map { .define($0) }
         ),
         .testTarget(
             name: "AppTests",

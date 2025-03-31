@@ -139,7 +139,7 @@ extension WebService {
 
         static func list(module: String, env: Env) throws -> [String] {
             try Module.Action.NoCheck.paraAvailable(module: module, env: env)
-            let moduleDir = "\(env.dataDir)/\(module)/web/"
+            let moduleDir = "\(env.dataDir)/\(module)/web"
             try FS.mkdir(path: moduleDir, slience: true, withIntermediates: true, output: false)
             let dirs = try FS.ls(path: moduleDir, dir: true, hiddenFile: false)
             return dirs
@@ -211,6 +211,7 @@ extension WebService {
                 let moduleDir = "\(env.dataDir)/\(module)"
                 let dataDir = "\(moduleDir)/web/\(name)"
                 let envFile = "\(dataDir)/.env"
+                let bundleDir = "\(dataDir)/bundle"
                 var envParas: [String: String] = [:]
                 for serPara in serviceParas {
                     let p = dbModule.startPort + serPara.port
@@ -234,7 +235,7 @@ extension WebService {
                 do {
                     try FS.mkdir(path: dataDir, slience: true, withIntermediates: true)
                     try FS.createEnvFile(at: envFile, with: envParas)
-                    try FS.cp(path: bundle, to: dataDir)
+                    try FS.cp(path: bundle, to: bundleDir)
                     try FS.setPermissions(path: dataDir, owner: "root", group: "whooshing", permissions: 0o770, recursive: true)
                     try start(module: module, name: name, env: env, dbModule: dbModule)
                 } catch let err {
@@ -250,31 +251,35 @@ extension WebService {
                 let moduleDir = "\(env.dataDir)/\(module)"
                 let dataDir = "\(moduleDir)/web/\(name)"
                 let envFile = "\(dataDir)/.env"
+                let bundleDir = "\(dataDir)/bundle"
                 try FS.rm(path: envFile)
                 try FS.mkdir(path: moduleDir + "/.trash", slience: true, withIntermediates: true)
                 let backupName = Tool.bakName(name: name)
-                try Sh.PM2.delete(configFile: "\(dataDir)/pm2.config.json", cwd: dataDir, env: env)
+                try Sh.PM2.delete(configFile: "\(bundleDir)/pm2.config.json", cwd: bundleDir, env: env)
                 try FS.mv(path: dataDir, to: moduleDir + "/.trash/" + backupName)
             }
 
             static func restart(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
+                let bundleDir = "\(dataDir)/bundle"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
-                try Sh.PM2.restart(configFile: "\(dataDir)/pm2.config.json", args: paras, cwd: dataDir, env: env)
+                try Sh.PM2.restart(configFile: "\(bundleDir)/pm2.config.json", args: paras, cwd: bundleDir, env: env)
             }
 
             static func start(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
+                let bundleDir = "\(dataDir)/bundle"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
-                try Sh.PM2.start(configFile: "\(dataDir)/pm2.config.json", args: paras, cwd: dataDir, env: env)
+                try Sh.PM2.start(configFile: "\(bundleDir)/pm2.config.json", args: paras, cwd: bundleDir, env: env)
             }
 
             static func stop(module: String, name: String, env: Env, dbModule: DBModel.Module) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
-                try Sh.PM2.stop(configFile: "\(dataDir)/pm2.config.json", cwd: dataDir, env: env)
+                let bundleDir = "\(dataDir)/bundle"
+                try Sh.PM2.stop(configFile: "\(bundleDir)/pm2.config.json", cwd: bundleDir, env: env)
             }
         }
     }

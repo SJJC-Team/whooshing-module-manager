@@ -1,9 +1,9 @@
 {
     "apps": [
         {
-            "name": "Whooshing-Module-Manager",
+            "name": "Whooshing.Manager",
             "cwd": ".",
-            "script": ".build/release/App"
+            "script": "./App"
         }
     ]
 }

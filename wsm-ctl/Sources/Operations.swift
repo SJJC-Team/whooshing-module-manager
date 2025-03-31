@@ -257,7 +257,6 @@ struct Sh {
         
         static func isServing(name: String, env: Env) throws -> Bool {
             let res = try run(in: File.sh(.pm2IsServing), paras: ["service_name": name], env: env)
-            print(String(data: res.res, encoding: .utf8)!)
             return res.code == 0
         }
     }
