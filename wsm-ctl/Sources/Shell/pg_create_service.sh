@@ -20,7 +20,7 @@ chmod -R 770 /var/run/postgresql
 echo -e "${b}初始化数据库...${n}"
 sudo -u woo env "PATH=$PATH" pg_ctl init -D "$data_dir"
 sudo -u woo echo "listen_addresses = 'localhost'" >> "$conf_file"
-sudo -u woo echo "shared_preload_libraries=pg_tde" >> "$conf_file"
+sudo -u woo echo "shared_preload_libraries = pg_tde" >> "$conf_file"
 sudo -u woo echo "port = $port" >> "$conf_file"
 sudo -u woo env "PATH=$PATH" pg_ctl start -D "$data_dir" -l $data_dir/log
 

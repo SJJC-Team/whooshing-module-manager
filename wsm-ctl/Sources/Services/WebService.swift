@@ -201,7 +201,7 @@ extension WebService {
                 ] {
                     paras[envName] = "http://localhost:20000"
                 }
-                paras["WHOOSHING_INLINE_SERVICE_PRIVATE_SERVICE_ID"] = module.serviceId.uuidString
+                paras["WHOOSHING_INLINE_SERVICE_PRIVATE_SERVICE_ID"] = module.serviceId.uuidString.lowercased()
                 paras["WHOOSHING_API_SERVICE_PRIVATE_AUTHENTICATION_URL"] = "http://localhost:20020"
                 return paras
             }
@@ -272,6 +272,7 @@ extension WebService {
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 let bundleDir = "\(dataDir)/bundle"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
+                // print(paras.map { "\($0.key)=\($0.value)" }.joined(separator: " "))
                 try Sh.PM2.start(configFile: "\(bundleDir)/pm2.config.json", args: paras, cwd: bundleDir, env: env)
             }
 
