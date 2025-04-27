@@ -18,14 +18,32 @@ struct DatabaseDepends {
         let needInit = try
             FS.isExist(path: dataDir, dir: true) == false ||
             Sh.isServing(port: p) == false || 
-            PgDatabase.Action.NoCheck.list(module: moduleName, port: port, env: env, basePort: basePort).first(where: { $0.db == Self.database }) == nil
+            PgDatabase.Action.NoCheck.list(module: moduleName, port: port, env: env, basePort: basePort).first(where: { $0.db == Self.database }) == nil ||
+            Sh.PM2.isServing(name: "Whooshing.Manager", env: env) == false
         
         if needInit {
             print("管理模块未初始化，正在初始化".info)
+            let webPath = "\(moduleDir)/web/bundle"
+            let configPath = "\(webPath)/pm2.config.json"
             if FS.isExist(path: moduleDir, dir: true) == false { try Module.Action.NoCheck.create(name: moduleName, env: env, basePort: basePort) }
             if FS.isExist(path: dataDir, dir: true) == false { try PgService.Action.NoCheck.create(module: moduleName, port: port, env: env, basePort: basePort) }
             if try Sh.isServing(port: p) == false { try PgService.Action.restart(module: moduleName, port: port, env: env) }
             if try PgDatabase.Action.NoCheck.list(module: moduleName, port: port, env: env, basePort: basePort).first(where: { $0.db == Self.database }) == nil { try PgDatabase.Action.NoCheck.create(module: moduleName, port: port, database: database, env: env, basePort: basePort) }
+            if try Sh.PM2.isServing(name: "Whooshing.Manager", env: env) == false {
+                let envPrefix = "WHOOSHING_HTTPS_SERVICE"
+                let key = try Sh.Vault.getKey(in: "\(moduleName)/\(port)/role/woo", env: env)
+                let envParas: [String: String] = [
+                    envPrefix + "_DB_COUNT": "1",
+                    envPrefix + "_NAME": "Manager",
+                    envPrefix + "_PORT": String(basePort),
+                    envPrefix + "_DB_1_NAME": database,
+                    envPrefix + "_DB_1_PORT": String(basePort + port),
+                    envPrefix + "_DB_1_USER": "woo",
+                    envPrefix + "_DB_1_PASSWORD": key,
+                    envPrefix + "_MANAGER_URL": "http://localhost:20000"
+                ]
+                try Sh.PM2.start(configFile: configPath, args: envParas, cwd: webPath, env: env)
+            }
         }
 
         let password = try Sh.Vault.getKey(in: "\(moduleName)/\(port)/role/woo", env: env)
@@ -42,17 +60,8 @@ struct DatabaseDepends {
         let eventLoop = eventLoopGroup.next()
 
         do {
-            if needInit { print("执行数据库迁移".info) }
             db.use(.postgres(configuration: configuration), as: .psql)
             guard let db = db.database(.psql, logger: .init(label: "woo.manager.log"), on: eventLoop) else { throw Err.dbInitFailed.d("未能成功获取数据库实例") }
-
-            let migrations = Migrations()
-            migrations.add(DBModel.Module.MIG())
-
-            let migrator = Migrator(databaseFactory: { _ in db }, migrations: migrations, on: eventLoop, migrationLogLevel: .debug)
-            try migrator.setupIfNeeded().flatMap { migrator.prepareBatch() }.wait()
-
-            if needInit { print("管理模块初始化完成".succ); print("-----------------------------".info) }
             return db
         } catch let err {
             db.shutdown()

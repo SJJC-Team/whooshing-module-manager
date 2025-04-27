@@ -35,6 +35,24 @@
             "name": "Release wsm (wsm-ctl)",
             "program": "${workspaceFolder:whooshing-module-manager}/wsm-ctl/.build/release/wsm",
             "preLaunchTask": "swift: Build Release wsm (wsm-ctl)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:whooshing-module-manager}/manager",
+            "name": "Debug App (manager)",
+            "program": "${workspaceFolder:whooshing-module-manager}/manager/.build/debug/App",
+            "preLaunchTask": "swift: Build Debug App (manager)"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:whooshing-module-manager}/manager",
+            "name": "Release App (manager)",
+            "program": "${workspaceFolder:whooshing-module-manager}/manager/.build/release/App",
+            "preLaunchTask": "swift: Build Release App (manager)"
         }
     ]
 }

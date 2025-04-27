@@ -68,7 +68,7 @@ extension Module {
                 try DBModel.Module(name: name, serviceId: UUID(), connection: nil, startPort: currentPort, portSpace: 20).create(on: depends.db).wait()
                 print("数据库更新完成".succ)
             } catch let err {
-                print("任务失败，正在回退".err)
+                print("任务失败-数据库更新失败，正在回退".err)
                 try? delete(name: name, env: env, depends: depends)
                 throw Err.createModuleFailed.d(err.localizedDescription)
             }

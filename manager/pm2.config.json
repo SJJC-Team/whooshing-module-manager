@@ -1,0 +1,9 @@
+{
+    "apps": [
+        {
+            "name": "Whooshing.Manager",
+            "cwd": ".",
+            "script": "./App"
+        }
+    ]
+}

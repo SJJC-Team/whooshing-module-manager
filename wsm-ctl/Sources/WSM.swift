@@ -11,9 +11,7 @@ struct WSM: ParsableCommand {
             .init(name: Module.help + "管理", subcommands: Module.subCmds),
             .init(name: PgService.help + "管理", subcommands: PgService.subCmds),
             .init(name: PgDatabase.help + "管理", subcommands: PgDatabase.subCmds),
-            .init(name: Service<Api>.help + "管理", subcommands: Service<Api>.subCmds),
-            .init(name: Service<Inline>.help + "管理", subcommands: Service<Inline>.subCmds),
-            .init(name: Service<Https>.help + "管理", subcommands: Service<Https>.subCmds),
+            .init(name: WebService.help + "管理", subcommands: WebService.subCmds),
         ], defaultSubcommand: Config.C.self
     )
 }

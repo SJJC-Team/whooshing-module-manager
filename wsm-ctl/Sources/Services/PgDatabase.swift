@@ -92,7 +92,7 @@ extension PgDatabase {
                 do {
                     try Sh.PG.Db.create(module: module, port: port, basePort: basePort, db: database, key: key, env: env)
                 } catch let err {
-                    print("任务失败，正在回退")
+                    print("任务失败，正在回退".err)
                     try? delete(module: module, port: port, database: database, env: env, basePort: basePort)
                     throw err
                 }
