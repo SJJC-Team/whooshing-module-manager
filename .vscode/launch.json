@@ -37,7 +37,7 @@
             "preLaunchTask": "swift: Build Release wsm (wsm-ctl)"
         },
         {
-            "type": "lldb",
+            "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:whooshing-module-manager}/manager",
@@ -46,7 +46,7 @@
             "preLaunchTask": "swift: Build Debug App (manager)"
         },
         {
-            "type": "lldb",
+            "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:whooshing-module-manager}/manager",

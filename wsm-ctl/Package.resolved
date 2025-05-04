@@ -1,5 +1,5 @@
 {
-  "originHash" : "992f7c17154159df8db364d402f543f454f2d1207d02c55f1dfc6037101d51db",
+  "originHash" : "b722e5c483c6cf5674ee85cb14d7f6cb52787b0562936e38770b33e2f9f129d5",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -213,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio.git",
       "state" : {
-        "revision" : "ba72f31e11275fc5bf060c966cf6c1f36842a291",
-        "version" : "2.79.0"
+        "revision" : "0f54d58bb5db9e064f332e8524150de379d1e51c",
+        "version" : "2.82.1"
       }
     },
     {
@@ -308,12 +308,30 @@
       }
     },
     {
+      "identity" : "whooshing-fluent",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SJJC-Team/whooshing-fluent.git",
+      "state" : {
+        "revision" : "10dd640ccddc5b51beaf11a0380672fc89da591c",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "whooshing-vapor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SJJC-Team/whooshing-vapor.git",
+      "state" : {
+        "revision" : "fb94ebdd4e09480054d5afa56339e866cf7f0208",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "whooshing.toolbox-basic",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SJJC-Team/whooshing.toolbox-basic.git",
       "state" : {
-        "branch" : "develop",
-        "revision" : "608a3d676e113d7c57bce12d1c640763f97fb466"
+        "revision" : "5df67292bea396577d66e42face40f61a3297c9e",
+        "version" : "1.2.1"
       }
     },
     {
