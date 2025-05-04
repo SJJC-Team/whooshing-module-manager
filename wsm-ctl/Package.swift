@@ -13,7 +13,7 @@ let package = Package(
         .package(url: "https://github.com/thebarndog/swift-dotenv.git", from: "2.1.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.3"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.10.0"),
-        .package(url: "https://github.com/vapor/fluent.git", from: "4.12.0"),
+        .package(url: "https://github.com/SJJC-Team/whooshing-fluent.git", from: "1.0.0"),
         .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", from: "1.2.1"),
     ],
     targets: [
@@ -25,7 +25,7 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
                 .product(name: "SwiftDotenv", package: "swift-dotenv"),
                 .product(name: "Yams", package: "Yams"),
-                .product(name: "Fluent", package: "fluent"),
+                .product(name: "Fluent", package: "whooshing-fluent"),
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "PgSQL", package: "whooshing.toolbox-basic"),
             ],

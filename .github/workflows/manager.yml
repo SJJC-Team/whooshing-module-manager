@@ -1,4 +1,4 @@
-name: Swift
+name: Manager Module Workflow
 
 on:
   push:

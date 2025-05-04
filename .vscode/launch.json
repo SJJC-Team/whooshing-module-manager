@@ -19,7 +19,7 @@
             "preLaunchTask": "swift: Build Release wsm-ctl (wsm-ctl)"
         },
         {
-            "type": "lldb",
+            "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:whooshing-module-manager}/wsm-ctl",
@@ -28,7 +28,7 @@
             "preLaunchTask": "swift: Build Debug wsm (wsm-ctl)"
         },
         {
-            "type": "lldb",
+            "type": "swift",
             "request": "launch",
             "args": [],
             "cwd": "${workspaceFolder:whooshing-module-manager}/wsm-ctl",
