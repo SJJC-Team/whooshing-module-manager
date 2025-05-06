@@ -6,6 +6,7 @@ struct Sh {
         case fileNotFound = "文件不存在"
         case shellExecuteFailed = "shell 执行失败"
         case shellExceptionExit = "shell 异常退出"
+        case ipAddrUnknowError = "获取 IP 地址时出现未知错误"
     }
 
     struct File {
@@ -26,6 +27,11 @@ struct Sh {
             case pgDeleteDb = "pg_delete_db"
             case pgTestDb = "pg_test_db"
             case pm2IsServing = "pm2_is_serving"
+            case acmeNewCert = "acme_new_cert"
+            case acmeDeleteCert = "acme_delete_cert"
+            case nginxNewHttp = "nginx_new_http"
+            case nginxNewHttps = "nginx_new_https"
+            case nginxDeleteConf = "nginx_delete_conf"
         }
 
         static func sh(_ shell: Shell) throws -> String {
@@ -261,9 +267,80 @@ struct Sh {
         }
     }
 
+    struct Acme {
+        enum Err: String, ErrList {
+            case certIssueFailed = "acme 证书颁发失败"
+            case certInstallFailed = "acme 证书安装失败"
+            case certIssueUnknowError = "证书颁发时发生未知错误"
+            case certDeleteFailed = "acme 证书删除失败"
+            case certDeleteUnknowError = "证书删除时发生未知错误"
+        }
+
+        static func create(domain: String, port: Int, wildcard: Bool = true, force: Bool = true, env: Env) throws {
+            let res = try run(in: File.sh(.acmeNewCert), paras: ["domain": domain, "port": String(port), "wildcard": String(wildcard), "force": String(force)], env: env)
+            switch res.code {
+                case 1: throw Err.certIssueFailed
+                case 2: throw Err.certInstallFailed
+                case 0: print("\(domain) 域名证书创建成功".succ)
+                default: throw Err.certIssueUnknowError.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+
+        static func delete(domain: String, wildcard: Bool = true, env: Env) throws {
+            let res = try run(in: File.sh(.acmeDeleteCert), paras: ["domain": domain, "wildcard": String(wildcard)], env: env)
+            switch res.code {
+                case 1: throw Err.certDeleteFailed
+                case 0: print("\(domain) 域名证书删除成功".succ)
+                default: throw Err.certDeleteUnknowError.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+    }
+
+    struct Nginx {
+
+        enum Err: String, ErrList {
+            case nginxCreateUnknowErr = "Nginx 配置出现未知错误"
+            case nginxDeleteUnknowErr = "Nginx 删除配置时出现未知错误"
+            case nginxRestartUnknowErr = "Nginx 重启时出现未知错误"
+        }
+
+        static func create(domain: String, port: Int, https: Bool, wildcard: Bool = true, env: Env) throws {
+            let res = try run(in: File.sh(https ? .nginxNewHttps : .nginxNewHttp), paras: ["domain": domain, "port": String(port), "wildcard": String(wildcard)], env: env)
+            switch res.code {
+                case 0: print("\(domain) Nginx 配置成功".succ)
+                default: throw Err.nginxCreateUnknowErr.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+
+        static func delete(domain: String, env: Env) throws {
+            let res = try run(in: File.sh(.nginxDeleteConf), paras: ["domain": domain], env: env)
+            switch res.code {
+                case 0: print("\(domain) Nginx 删除配置成功".succ)
+                default: throw Err.nginxDeleteUnknowErr.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+
+        static func restart(env: Env) throws {
+            let res = try run("systemctl restart nginx", env: env)
+            switch res.code {
+                case 0: print("Nginx 重启成功".succ)
+                default: throw Err.nginxRestartUnknowErr.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+        
+    }
+
     static func isServing(port: Int) throws -> Bool {
         let res = try run("lsof -i :\(port)", env: Env())
         return res.res.count > 0
+    }
+
+    static func ipAddr() throws -> String {
+        let res = try run("curl -s https://ipinfo.io/ip", env: Env())
+        switch res.code {
+            case 0: return String(data: res.res, encoding: .utf8)!
+            default: throw Err.ipAddrUnknowError.d(String(data: res.res, encoding: .utf8)!)
+        }
     }
 
     static func run(_ arguments: [String], paras: [String: String] = [:], env: Env) throws -> (code: Int32, res: Data) {
@@ -296,6 +373,9 @@ struct FS {
         case mvFailed = "移动文件失败"
         case cpFailed = "拷贝文件失败"
         case rmFailed = "删除文件失败"
+        case envFileNotExist = "Env 文件不存在"
+        case envFileOpenFailed = "Env 文件打开失败"
+        case envContentNotValid = "要写入的 Env 内容无效"
     }
 
     static let fileManager = FileManager.default
@@ -335,9 +415,19 @@ struct FS {
     }
 
     static func createEnvFile(at path: String, with content: [String: String]) throws {
-        let envContent = content.map { "\($0.key)=\($0.value)" }.joined(separator: "\n")
+        let envContent = content.map { "\($0.key)=\($0.value)" }.joined(separator: "\n") + "\n"
         guard fileManager.createFile(atPath: path, contents: envContent.data(using: .utf8), attributes: nil) else { throw Err.fileCreateFailed.d(path) }
         print("创建 env 文件: \(path) 成功".succ)
+    }
+
+    static func appendEnvFile(to path: String, with content: [String: String]) throws {
+        let envContent = content.map { "\($0.key)=\($0.value)" }.joined(separator: "\n") + "\n"
+        guard isExist(path: path, dir: false) else { throw Err.envFileNotExist.d(path) }
+        guard let file = FileHandle(forWritingAtPath: path) else { throw Err.envFileOpenFailed.d(path) }
+        file.seekToEndOfFile()
+        guard let data = envContent.data(using: .utf8) else { throw Err.envContentNotValid.d(path) }
+        try file.write(contentsOf: data)
+        print("env 文件: \(path) 环境变量追加成功".succ)
     }
 
     static func readEnvFile(at path: String) throws -> [String: String] {

@@ -17,6 +17,7 @@ let package = Package(
         .package(url: "https://github.com/SJJC-Team/whooshing-fluent.git", from: "1.0.0"),
         // 🐘 对 PostgreSQL 的 Fluent 驱动器
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
+        .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -27,7 +28,8 @@ let package = Package(
                 .product(name: "Vapor", package: "whooshing-vapor"),
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
-                .product(name: "Whooshing", package: "whooshing.toolbox-basic")
+                .product(name: "Whooshing", package: "whooshing.toolbox-basic"),
+                .product(name: "NIOExtras", package: "swift-nio-extras"),
             ],
             swiftSettings: swiftSettings + ["HTTPS"].map { .define($0) }
         ),
