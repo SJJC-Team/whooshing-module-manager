@@ -152,11 +152,8 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             }
         }
         if self.connectionPool[id] == nil {
-            print("// 该请求是第一次发送来的")
+            logger.debug("DomainForward-收到客户端第一次请求: \(context.channel.serverAddrInfo)")
             let request = String(buffer: data)
-            print("-------------------------")
-            print(request)
-            print("-----------End--------------")
             guard let hostStr = request.split(separator: "\r\n").first(where: { $0.lowercased().hasPrefix("host") })?.lowercased() else {
                 let err = DomainForwardErr.protocolError.d("未能找到 Host", 13061, (#file, #line))
                 self.errorHappend(channel: context.channel, error: err, status: .badRequest, clientErr: true)
