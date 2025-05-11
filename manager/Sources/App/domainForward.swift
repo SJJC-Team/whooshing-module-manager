@@ -77,7 +77,17 @@ final class Queue<DataType>: @unchecked Sendable {
         while datas.count > 0 {
             let data = lock.withLock { datas.removeFirst() }
             if stop { stop = false; break }
-            try await self.handler(data)
+            do {
+                try await self.handler(data)
+            } catch let err {
+                if let e = err as? ChannelError, e == .ioOnClosedChannel {
+                    if !stop {
+                        throw e
+                    }
+                } else {
+                    throw err
+                }
+            }
             if stop { stop = false; break }
         }
         lock.withLock { busy = false }
@@ -113,7 +123,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
 
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         let data = unwrapInboundIn(data)
-        
+
         queue.append((data, context))
 
         context.eventLoop.makeFutureWithTask {
@@ -123,9 +133,24 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
         }
     }
 
+    func channelRegistered(context: ChannelHandlerContext) {
+        context.fireChannelRegistered()
+        logger.debug("DomainForward-接受新的客户端连接: \(context.channel.serverAddrInfo)")
+    }
+
+    func channelUnregistered(context: ChannelHandlerContext) {
+        context.fireChannelUnregistered()
+        logger.debug("DomainForward-客户端连接关闭: \(context.channel.serverAddrInfo)")
+    }
+
     func dataHandler(_ d: (ByteBuffer, ChannelHandlerContext)) async throws {
         let (data, context) = d
         let id = ObjectIdentifier(context.channel)
+        if let channel = self.connectionPool[id] {
+            if channel.isActive == false {
+                self.connectionPool[id] = nil;
+            }
+        }
         if self.connectionPool[id] == nil {
             print("// 该请求是第一次发送来的")
             let request = String(buffer: data)
@@ -148,7 +173,6 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
 
             let domain = String(hostArr[1])
 
-            print("// 检查域名")
             let clientDomain = try await Domain.query(on: self.db).filter(\.$domain == domain).first().get()
             guard let dom = clientDomain else {
                 throw DomainForwardErr.domainNotExist.d("客户端所请求的域名: \(domain)", 13060, (#file, #line))
@@ -159,7 +183,9 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
         }
 
         let targetChannel = self.connectionPool[id]!
-        print("// 将客户端请求发送给服务模块")
+
+        // 将客户端请求发送给服务模块
+        logger.debug("DomainForward-转发客户端的请求: Data: \(data.readableBytes), Client(\(context.channel.remoteAddrInfo)) -> Self(\(context.channel.localAddrInfo)) -> Server(\(targetChannel.remoteAddrInfo))")
         try await targetChannel.writeAndFlush(data)
     }
 
@@ -180,12 +206,13 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             .channelOption(.socketOption(.so_reuseaddr), value: 1)
             .channelOption(.maxMessagesPerRead, value: 1)
         
+        logger.debug("DomainForward-正在与服务建立连线: Self(\(clientChannel.remoteAddrInfo)) -> Server(\(port))")
+
         let channel = try await bootstrap.connect(host: "127.0.0.1", port: port).get()
         return channel
     }
 
     func errorHappend(channel: Channel, error: Error, status: HTTPStatus, clientErr: Bool) {
-
         self.queue.pause()
 
         let id = ObjectIdentifier(channel)
@@ -265,6 +292,7 @@ final class ForwardChannelHandler: ChannelInboundHandler, @unchecked Sendable {
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         if let clientChannel = self.clientChannel, let serverChannelHandler = serverChannelHandler {
             let data = unwrapInboundIn(data)
+            logger.debug("DomainForward-转发服务器的回复: Server(\(context.channel.remoteAddrInfo)) -> Self(\(context.channel.localAddrInfo)) -> Client(\(clientChannel.remoteAddrInfo))")
             clientChannel.writeAndFlush(data).whenFailure { err in 
                 serverChannelHandler.errorHappend(channel: clientChannel, error: err, status: .internalServerError, clientErr: false)
             }
@@ -272,5 +300,15 @@ final class ForwardChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             let err = DomainForwardErr.clientChannelNotExist.d(13057, #file, #line)
             logger.report(error: err)
         }
+    }
+
+    func channelRegistered(context: ChannelHandlerContext) {
+        context.fireChannelRegistered()
+        logger.debug("DomainForward-服务器连接创建成功: \(context.channel.clientAddrInfo)")
+    }
+
+    func channelUnregistered(context: ChannelHandlerContext) {
+        context.fireChannelUnregistered()
+        logger.debug("DomainForward-服务器连接关闭: \(context.channel.clientAddrInfo)")
     }
 }
