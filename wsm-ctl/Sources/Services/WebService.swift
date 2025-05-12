@@ -1,6 +1,7 @@
 import ArgumentParser
 import Foundation
 import Fluent
+import CloudflareDNS
 
 struct WebService: LCDS {
     
@@ -38,6 +39,9 @@ struct WebService: LCDS {
         @Argument(help: "API 服务的端口号") var apiPort: Int?
         @Argument(help: "HTTPS 服务的端口号") var httpsPort: Int?
 
+        @Option(name: .shortAndLong, help: "HTTP 服务模块的相对域名") var httpsDomain: String?
+        @Option(name: .shortAndLong, help: "API 服务模块的相对域名") var apiDomain: String?
+
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API 服务连接的数据库端口号列表") var apiDbPorts: [Int]
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "INLINE 服务连接的数据库端口号列表") var inlineDbPorts: [Int]
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "HTTPS 服务连接的数据库端口号列表") var httpsDbPorts: [Int]
@@ -47,6 +51,7 @@ struct WebService: LCDS {
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "HTTPS 服务连接的数据库名称") var httpsDbNames: [String]
         
         struct Paras {
+            let domain: String?
             let serviceType: ServiceType
             let port: Int
             let dbPorts: [Int]
@@ -56,14 +61,15 @@ struct WebService: LCDS {
         var paras: [String] { [bundle] }
         func one(para name: String, i: Int, env: Env, depends: Depends) throws {
             let paras: [Paras] = ([.api: apiPort, .inline: inlinePort, .https: httpsPort].compactMapValues { $0 } as [ServiceType: Int]).map { type, port in
+                let domain: String?
                 let ports: [Int]
                 let names: [String]
                 switch type {
-                    case .api: ports = apiDbPorts; names = apiDbNames
-                    case .inline: ports = inlineDbPorts; names = inlineDbNames
-                    case .https: ports = httpsDbPorts; names = httpsDbNames
+                    case .api: domain = apiDomain; ports = apiDbPorts; names = apiDbNames
+                    case .inline: domain = nil; ports = inlineDbPorts; names = inlineDbNames
+                    case .https: domain = httpsDomain; ports = httpsDbPorts; names = httpsDbNames
                 }
-                return .init(serviceType: type, port: port, dbPorts: ports, dbNames: names)
+                return .init(domain: domain, serviceType: type, port: port, dbPorts: ports, dbNames: names)
             }
             try Action.create(
                 module: module,
@@ -150,6 +156,7 @@ extension WebService {
             guard let inline = (serviceParas.first { $0.serviceType == .inline }) else { throw Err.missingInlineService }
             try NoCheck.create(module: module, name: name, serviceParas: serviceParas, bundle: bundle, env: env, dbModule: model)
             do {
+                try createDomain(module: module, name: name, model: model, serviceParas: serviceParas, env: env, depends: depends)
                 try DBModel.Module.query(on: depends.db).set(\.$connection, to: "http://localhost:\(model.startPort + inline.port)").filter(\.$serviceId == model.serviceId).update().wait()
                 print("数据库更新完成".succ)
             } catch let err {
@@ -159,9 +166,109 @@ extension WebService {
             }
         }
 
+        static func createDomain(module: String, name: String, model: DBModel.Module, serviceParas: [C.Paras], env: Env, depends: Depends) throws {
+            let moduleDir = "\(env.dataDir)/\(module)"
+            let dataDir = "\(moduleDir)/web/\(name)"
+            let envFile = "\(dataDir)/.env"
+
+            let cloudflare = Cloudflare(token: env.cfToken, accountId: env.cfAccountId, zoneId: env.cfZoneId)
+            let semaphore = DispatchSemaphore(value: 0)
+            var caughtError: Error?
+            var envs: [String: String] = [:]
+            Task.detached {
+                defer { semaphore.signal() }
+                do {
+                    let records = try await cloudflare.listRecords()
+                    print("正在拉取所有的 DNS 记录".info)
+                    for serPara in serviceParas {
+                        let serviceSuffix = serPara.serviceType.rawValue.uppercased()
+                        if let domain = serPara.domain {
+                            let ip = try Sh.ipAddr()
+                            let dnsRec: DNSRecord
+                            if let record = records.first(where: { $0.name == domain }) {
+                                print("DNS 记录已存在，无需再创建".succ)
+                                dnsRec = try await cloudflare.updateRecord(.init(.A, domain: domain, to: ip), id: record.id)
+                            }
+                            else {
+                                print("DNS 记录不存在，正在创建".info)
+                                dnsRec = try await cloudflare.createRecord(.init(.A, domain: domain, to: ip))
+                            }
+
+                            envs["CLOUDFLARE_DNS_RECORD_ID_\(serviceSuffix)"] = dnsRec.id
+
+                            let p = model.startPort + serPara.port
+                            if serPara.serviceType == .https {
+                                print("正在申请证书，请稍侯...".info)
+                                try Sh.Acme.create(domain: domain, port: p, wildcard: true, force: true, env: env)
+
+                                envs["ACME_CERT_\(serviceSuffix)"] = domain
+
+                                try Sh.Nginx.create(domain: domain, port: p, https: true, wildcard: true, env: env)
+                            } else {
+                                if let _ = try await DBModel.Domain.query(on: depends.db).filter(\.$domain == domain).first() {
+                                    print("域名转发配置已存在，更新中...".info)
+                                    try await DBModel.Domain.query(on: depends.db).set(\.$port, to: p).filter(\.$domain == domain).update()
+                                } else {
+                                    print("正在创建域名转发配置...".info)
+                                    try await DBModel.Domain(domain: domain, port: p).save(on: depends.db)
+                                }
+
+                                envs["DOMAIN_FORWARD_\(serviceSuffix)"] = domain
+
+                                print("域名转发配置完成".info)
+                                try Sh.Nginx.create(domain: domain, port: p, https: false, wildcard: true, env: env)
+                            }
+                            envs["NGINX_CONF_\(serviceSuffix)"] = domain
+                        }
+                    }
+                } catch {
+                    caughtError = error
+                }
+            }
+            semaphore.wait()
+            if envs.count > 0 { try FS.appendEnvFile(to: envFile, with: envs) }
+            if let error = caughtError { throw error }
+            try Sh.Nginx.restart(env: env)
+        }
+
         static func delete(module: String, name: String, env: Env, depends: Depends) throws {
             let model = try paraAvailable(module: module, name: name, env: env, depends: depends)
+            let envFile = "\(env.dataDir)/\(module)/web/\(name)/.env"
+            try cleanDomains(envFile: envFile, env: env, depends: depends)
             try NoCheck.delete(module: module, name: name, env: env, basePort: model.startPort)
+        }
+
+        static func cleanDomains(envFile: String, env: Env, depends: Depends) throws {
+            print("正在清空域名配置".info)
+            let cloudflare = Cloudflare(token: env.cfToken, accountId: env.cfAccountId, zoneId: env.cfZoneId)
+            let envs = try FS.readEnvFile(at: envFile)
+
+            let semaphore = DispatchSemaphore(value: 0)
+            var error: Error?
+            Task.detached {
+                defer {
+                    semaphore.signal()
+                }
+                do {
+                    for (key, value) in envs {
+                        if key.hasPrefix("CLOUDFLARE_DNS_RECORD_ID_") {
+                            let _ = try await cloudflare.deleteRecord(value)
+                        } else if key.hasPrefix("ACME_CERT_") {
+                            try Sh.Acme.delete(domain: value, wildcard: true, env: env)
+                        } else if key.hasPrefix("DOMAIN_FORWARD_") {
+                            try await DBModel.Domain.query(on: depends.db).filter(\.$domain == value).delete()
+                        } else if key.hasPrefix("NGINX_CONF_") {
+                            try Sh.Nginx.delete(domain: value, env: env)
+                        }
+                    }
+                } catch let err {
+                    error = err
+                }
+            }
+            
+            semaphore.wait()
+            if let err = error { throw err }
+            try Sh.Nginx.restart(env: env)
         }
 
         static func restart(module: String, name: String, env: Env, depends: Depends) throws {
@@ -272,7 +379,7 @@ extension WebService {
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 let bundleDir = "\(dataDir)/bundle"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
-                // print(paras.map { "\($0.key)=\($0.value)" }.joined(separator: " "))
+                print(paras.map { "\($0.key)=\($0.value)" }.joined(separator: " "))
                 try Sh.PM2.start(configFile: "\(bundleDir)/pm2.config.json", args: paras, cwd: bundleDir, env: env)
             }
 

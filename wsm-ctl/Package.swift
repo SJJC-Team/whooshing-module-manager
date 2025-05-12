@@ -15,6 +15,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.10.0"),
         .package(url: "https://github.com/SJJC-Team/whooshing-fluent.git", from: "1.0.0"),
         .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", from: "1.2.1"),
+        .package(url: "https://github.com/SJJC-Team/cloudflare-dns.git", .upToNextMajor(from: "1.0.5"))
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -28,6 +29,7 @@ let package = Package(
                 .product(name: "Fluent", package: "whooshing-fluent"),
                 .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
                 .product(name: "PgSQL", package: "whooshing.toolbox-basic"),
+                .product(name: "CloudflareDNS", package: "cloudflare-dns")
             ],
             resources: [
                 .process("Shell")

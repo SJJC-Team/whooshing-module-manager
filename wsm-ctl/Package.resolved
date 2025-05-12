@@ -1,5 +1,5 @@
 {
-  "originHash" : "d0f07645e7844a1a9caf5f5b7b0ad85f7c8386f08dd66c9670b2550c5587c5bb",
+  "originHash" : "38695736ad14caf3a38580c9835b2909e089f2939ac4b33743046df4b465b0d8",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "e048c8ee94967e8d8a1c2ec0e1156d6f7fa34d31",
         "version" : "1.20.0"
+      }
+    },
+    {
+      "identity" : "cloudflare-dns",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SJJC-Team/cloudflare-dns.git",
+      "state" : {
+        "revision" : "32e8ceae50732c31a2f8db257fa1bd736a3350b1",
+        "version" : "1.0.5"
       }
     },
     {
