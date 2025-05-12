@@ -139,7 +139,13 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
     }
 
     func channelUnregistered(context: ChannelHandlerContext) {
+        let id = ObjectIdentifier(context.channel)
         context.fireChannelUnregistered()
+        if let channel = self.connectionPool[id] {
+            if channel.isActive == true {
+                channel.close(promise: nil)
+            }
+        }
         logger.debug("DomainForward-客户端连接关闭: \(context.channel.serverAddrInfo)")
     }
 
@@ -306,6 +312,11 @@ final class ForwardChannelHandler: ChannelInboundHandler, @unchecked Sendable {
 
     func channelUnregistered(context: ChannelHandlerContext) {
         context.fireChannelUnregistered()
+        if let channel = clientChannel {
+            if channel.isActive {
+                channel.close(promise: nil)
+            }
+        }
         logger.debug("DomainForward-服务器连接关闭: \(context.channel.clientAddrInfo)")
     }
 }
