@@ -2,7 +2,7 @@ import Vapor
 import Logging
 import NIOCore
 import NIOPosix
-import Whooshing
+import WhooshingServer
 import ErrorHandle
 
 /// 该函数为入口函数，是整个 Vapor 服务的执行起始点

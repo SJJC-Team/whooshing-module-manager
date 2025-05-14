@@ -1,5 +1,5 @@
 import Vapor
-import Whooshing
+import WhooshingServer
 
 struct Configuration {
     /// 对 Https 模块进行配置，如果设置了 INLINE 环境变量
