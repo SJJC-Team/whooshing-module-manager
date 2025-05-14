@@ -4,7 +4,10 @@ import PackageDescription
 let package = Package(
     name: "manager",
     platforms: [
-       .macOS(.v13)
+        .macOS(.v10_15),
+        .iOS(.v13),
+        .tvOS(.v13),
+        .watchOS(.v6)
     ],
     dependencies: [
         // 💧 Vapor -- Swift 服务器端第三方框架
