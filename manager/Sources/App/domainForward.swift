@@ -25,7 +25,6 @@ class DomainForward: @unchecked Sendable {
     // key: 客户端与该中转的连线 channel
     // value: 该中转与目标服务的连线 channel
     let connectionPool: SendableDictionary<ObjectIdentifier, Channel> = .init()
-    let verifingPool: SendableDictionary<ObjectIdentifier, Bool> = .init()
 
     func domainForwardExecute(app: Application) async throws {
         let bootstrap = ServerBootstrap(group: app.eventLoopGroup.next())
@@ -35,7 +34,6 @@ class DomainForward: @unchecked Sendable {
                     ByteToMessageHandler(LengthFieldBasedFrameDecoder(lengthFieldLength: .eight, lengthFieldEndianness: .big)),
                     ServerChannelHandler(
                         connectionPool: self.connectionPool,
-                        verifingPool: self.verifingPool,
                         logger: app.logger,
                         db: app.db
                     ),
@@ -50,7 +48,7 @@ class DomainForward: @unchecked Sendable {
             let channel = try await bootstrap.bind(host: "0.0.0.0", port: 20002).get()
             app.logger.notice("域名转发服务开始监听 \(channel.localAddrInfo)")
         } catch {
-            app.logger.report(error: DomainForwardErr.unknowError.d(13053, #file, #line).subErr(error))
+            app.logger.report(error: DomainForwardErr.unknowError.d(13053).subErr(error))
             throw error
         }
     }
@@ -103,19 +101,16 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
     typealias InboundOut = ByteBuffer
 
     let connectionPool: SendableDictionary<ObjectIdentifier, Channel>
-    let verifingPool: SendableDictionary<ObjectIdentifier, Bool>
     let logger: Logger
     let db: Database
     let queue = Queue<(ByteBuffer, ChannelHandlerContext)>()
 
     init(
         connectionPool: SendableDictionary<ObjectIdentifier, Channel>, 
-        verifingPool: SendableDictionary<ObjectIdentifier, Bool>,
         logger: Logger, 
         db: Database
     ) {
         self.connectionPool = connectionPool
-        self.verifingPool = verifingPool
         self.logger = logger
         self.db = db
         self.queue.handler = dataHandler
@@ -133,17 +128,18 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
         }
     }
 
-    func channelRegistered(context: ChannelHandlerContext) {
-        context.fireChannelRegistered()
+    func channelActive(context: ChannelHandlerContext) {
+        context.fireChannelActive()
         logger.debug("DomainForward-接受新的客户端连接: \(context.channel.serverAddrInfo)")
     }
 
-    func channelUnregistered(context: ChannelHandlerContext) {
+    func channelInactive(context: ChannelHandlerContext) {
         let id = ObjectIdentifier(context.channel)
-        context.fireChannelUnregistered()
+        context.fireChannelInactive()
         if let channel = self.connectionPool[id] {
             if channel.isActive == true {
                 channel.close(promise: nil)
+                self.connectionPool[id] = nil
             }
         }
         logger.debug("DomainForward-客户端连接关闭: \(context.channel.serverAddrInfo)")
@@ -161,7 +157,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             logger.debug("DomainForward-收到客户端第一次请求: \(context.channel.serverAddrInfo)")
             let request = String(buffer: data)
             guard let hostStr = request.split(separator: "\r\n").first(where: { $0.lowercased().hasPrefix("host") })?.lowercased() else {
-                let err = DomainForwardErr.protocolError.d("未能找到 Host", 13061, (#file, #line))
+                let err = DomainForwardErr.protocolError.d("未能找到 Host", 13061)
                 self.errorHappend(channel: context.channel, error: err, status: .badRequest, clientErr: true)
                 return
             }
@@ -169,7 +165,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             let hostArr = hostStr.split(separator: ": ")
             
             guard hostArr.count == 2 else {
-                let err = DomainForwardErr.protocolError.d("Host 字段不符合 HTTP 规范", 13062, (#file, #line))
+                let err = DomainForwardErr.protocolError.d("Host 字段不符合 HTTP 规范", 13062)
                 self.errorHappend(channel: context.channel, error: err, status: .badRequest, clientErr: true)
                 return
             }
@@ -178,7 +174,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
 
             let clientDomain = try await Domain.query(on: self.db).filter(\.$domain == domain).first().get()
             guard let dom = clientDomain else {
-                throw DomainForwardErr.domainNotExist.d("客户端所请求的域名: \(domain)", 13060, (#file, #line))
+                throw DomainForwardErr.domainNotExist.d("客户端所请求的域名: \(domain)", 13060)
             }
 
             let channel = try await self.forwardToService(port: dom.port, clientChannel: context.channel)
@@ -227,9 +223,9 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
         let err: Error
 
         if clientErr {
-            err = DomainForwardErr.clientChannelError.d(13055, #file, #line).subErr(error)
+            err = DomainForwardErr.clientChannelError.d(13055).subErr(error)
         } else {
-            err = DomainForwardErr.forwardChannelError.d(13065, #file, #line).subErr(error)
+            err = DomainForwardErr.forwardChannelError.d(13065).subErr(error)
         }
 
         logger.report(error: err)
@@ -253,10 +249,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             )
 
             channel.writeAndFlush(ByteBuffer(string: httpResponseHeadToString(head))).flatMap {
-                var buffer = ChunkTool.eof
-                var body = body
-                buffer.writeBuffer(&body)
-                return channel.writeAndFlush(buffer)
+                channel.writeAndFlush(body)
             }.whenComplete { _ in
                 channel.close(promise: nil)
             }
@@ -283,8 +276,8 @@ final class ForwardChannelHandler: ChannelInboundHandler, @unchecked Sendable {
 
     let logger: Logger
 
-    weak var clientChannel: Channel?
-    weak var serverChannelHandler: ServerChannelHandler?
+    unowned var clientChannel: Channel
+    unowned var serverChannelHandler: ServerChannelHandler
 
     init(clientChannel: Channel, serverChannelHandler: ServerChannelHandler, logger: Logger) {
         self.clientChannel = clientChannel
@@ -293,29 +286,22 @@ final class ForwardChannelHandler: ChannelInboundHandler, @unchecked Sendable {
     }
 
     func channelRead(context: ChannelHandlerContext, data: NIOAny) {
-        if let clientChannel = self.clientChannel, let serverChannelHandler = serverChannelHandler {
-            let data = unwrapInboundIn(data)
-            logger.debug("DomainForward-转发服务器的回复: Server(\(context.channel.remoteAddrInfo)) -> Self(\(context.channel.localAddrInfo)) -> Client(\(clientChannel.remoteAddrInfo))")
-            clientChannel.writeAndFlush(data).whenFailure { err in 
-                serverChannelHandler.errorHappend(channel: clientChannel, error: err, status: .internalServerError, clientErr: false)
-            }
-        } else {
-            let err = DomainForwardErr.clientChannelNotExist.d(13057, #file, #line)
-            logger.report(error: err)
+        let data = unwrapInboundIn(data)
+        logger.debug("DomainForward-转发服务器的回复: Server(\(context.channel.remoteAddrInfo)) -> Self(\(context.channel.localAddrInfo)) -> Client(\(clientChannel.remoteAddrInfo))")
+        clientChannel.writeAndFlush(data).whenFailure { err in 
+            self.serverChannelHandler.errorHappend(channel: self.clientChannel, error: err, status: .internalServerError, clientErr: false)
         }
     }
 
-    func channelRegistered(context: ChannelHandlerContext) {
-        context.fireChannelRegistered()
+    func channelActive(context: ChannelHandlerContext) {
+        context.fireChannelActive()
         logger.debug("DomainForward-服务器连接创建成功: \(context.channel.clientAddrInfo)")
-    }
+    } 
 
-    func channelUnregistered(context: ChannelHandlerContext) {
-        context.fireChannelUnregistered()
-        if let channel = clientChannel {
-            if channel.isActive {
-                channel.close(promise: nil)
-            }
+    func channelInactive(context: ChannelHandlerContext) {
+        context.fireChannelInactive()
+        if clientChannel.isActive {
+            clientChannel.close(promise: nil)
         }
         logger.debug("DomainForward-服务器连接关闭: \(context.channel.clientAddrInfo)")
     }

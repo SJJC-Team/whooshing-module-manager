@@ -1,6 +1,6 @@
 import Vapor
 import Fluent
-import Whooshing
+import WhooshingServer
 import Cryptos
 
 struct Manager: RouteCollection {
