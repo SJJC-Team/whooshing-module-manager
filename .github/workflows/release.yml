@@ -7,8 +7,8 @@ on:
 jobs:
   build-and-upload:
     name: Build and Upload All Binaries
-    runs-on: ubuntu-22.04
-    container: swift:6.0
+    runs-on: ubuntu-latest
+    container: swift:5.10-bionic
 
     steps:
       - name: Checkout code
@@ -21,7 +21,10 @@ jobs:
           ARCH=$(uname -m)
           OS="ubuntu22.04"
           OUTPUT="manager-${OS}-${ARCH}-static.tar.gz"
-          tar -czvf $OUTPUT -C .build/release App
+          mkdir bundle
+          mv .build/release/App bundle/App
+          mv pm2.config.json bundle/pm2.config.json
+          tar -czvf $OUTPUT -C bundle .
           mv $OUTPUT ../
 
       - name: Build and package wsm-ctl
@@ -36,8 +39,8 @@ jobs:
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
-        env: 
-            GITHUB_TOKEN: ${{ secrets.CLWANG_RELEASE_ACCESS }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.CLWANG_RELEASE_ACCESS }}
         with:
           files: |
             manager-ubuntu22.04-*-static.tar.gz
