@@ -22,7 +22,7 @@ jobs:
           ARCH=$(uname -m)
           OS="ubuntu22.04"
           OUTPUT="${APP_NAME}-${OS}-${ARCH}-static.tar.gz"
-          tar -czvf $OUTPUT -C .build/release $APP_NAME
+          tar -czvf $OUTPUT -C .build/release App
           mv $OUTPUT ../
 
       - name: Build and package wsm-ctl
@@ -33,7 +33,7 @@ jobs:
           ARCH=$(uname -m)
           OS="ubuntu22.04"
           OUTPUT="${APP_NAME}-${OS}-${ARCH}-static.tar.gz"
-          tar -czvf $OUTPUT -C .build/release $APP_NAME
+          tar -czvf $OUTPUT -C .build/release wsm
           mv $OUTPUT ../
 
       - name: Upload binaries to GitHub Release
