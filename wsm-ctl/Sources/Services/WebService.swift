@@ -379,7 +379,7 @@ extension WebService {
                 let dataDir = "\(env.dataDir)/\(module)/web/\(name)"
                 let bundleDir = "\(dataDir)/bundle"
                 let paras = try parseEnv(in: "\(dataDir)/.env", module: dbModule, env: env)
-                print(paras.map { "\($0.key)=\($0.value)" }.joined(separator: " "))
+                // print(paras.map { "\($0.key)=\($0.value)" }.joined(separator: " "))
                 try Sh.PM2.start(configFile: "\(bundleDir)/pm2.config.json", args: paras, cwd: bundleDir, env: env)
             }
 

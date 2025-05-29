@@ -28,8 +28,8 @@ sudo -u woo env "PATH=$PATH" pg_ctl start -D "$data_dir" -l $data_dir/log
 echo -e "${b}创建扩展 - pg_tde...${n}"
 sudo -u woo psql -d template1 -p $port -U woo -c "DROP DATABASE postgres;"
 sudo -u woo psql -d template1 -p $port -U woo -c "CREATE EXTENSION pg_tde;"
-sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_add_key_provider_vault_v2('vault-provider','$WHOOSHING_VAULT_ROOT_TOKEN','$VAULT_ADDR', '$module', NULL);"
-sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_set_principal_key('$p/tde/template1', 'vault-provider');"
+sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_add_global_key_provider_vault_v2('vault-provider','$WHOOSHING_VAULT_ROOT_TOKEN','$VAULT_ADDR', '$module', NULL);"
+sudo -u woo psql -d template1 -p $port -U woo -c "SELECT pg_tde_set_default_key_using_global_key_provider('$p/tde/template1', 'vault-provider');"
 
 # 设置密码
 echo -e "${b}设置密码...${n}"
