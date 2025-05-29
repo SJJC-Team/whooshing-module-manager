@@ -7,8 +7,8 @@ on:
 jobs:
   build-and-upload:
     name: Build and Upload All Binaries
-    runs-on: ubuntu-22.04
-    container: swift:6.0.3-focal
+    runs-on: ubuntu-noble-amd64
+    container: swift:6.0-noble
 
     steps:
       - name: Checkout code
