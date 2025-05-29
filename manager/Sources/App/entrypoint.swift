@@ -113,7 +113,7 @@ struct UnsafeDebuggingOnly {
                 name: "Testing-Https-\(httpsListenPort)",
                 port: httpsListenPort,
                 databases: databaseConfigs
-            ),
+            )
         )
     }
 }
