@@ -1,13 +1,13 @@
 {
-  "originHash" : "e3f4e70bef0799e3602fd90701ddee9e21dd86f48d2167fa279855dd82cea7e3",
+  "originHash" : "904e0a1cb8b19356567137823e14a5ccce1443fe16d7417afa3687225f281935",
   "pins" : [
     {
       "identity" : "async-http-client",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/swift-server/async-http-client.git",
       "state" : {
-        "revision" : "3b265e6a00fc5c3fdb8f91f773e506990c704337",
-        "version" : "1.26.0"
+        "revision" : "60235983163d040f343a489f7e2e77c1918a8bd9",
+        "version" : "1.26.1"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/vapor/postgres-nio.git",
       "state" : {
-        "revision" : "5d817be55cae8b00003b7458944954558302d006",
-        "version" : "1.25.0"
+        "revision" : "9ef06112c41feb7170c8c9116361f170e2a2b1d1",
+        "version" : "1.26.1"
       }
     },
     {
@@ -128,12 +128,21 @@
       }
     },
     {
+      "identity" : "swift-certificates",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-certificates.git",
+      "state" : {
+        "revision" : "999fd70c7803da89f3904d635a6815a2a7cd7585",
+        "version" : "1.10.0"
+      }
+    },
+    {
       "identity" : "swift-collections",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections.git",
       "state" : {
-        "revision" : "671108c96644956dddcd89dd59c203dcdb36cec7",
-        "version" : "1.1.4"
+        "revision" : "c1805596154bb3a265fd91b8ac0c4433b4348fb0",
+        "version" : "1.2.0"
       }
     },
     {
@@ -159,8 +168,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-structured-headers.git",
       "state" : {
-        "revision" : "f280fc7676b9940ff2c6598642751ea333c6544f",
-        "version" : "1.2.2"
+        "revision" : "db6eea3692638a65e2124990155cd220c2915903",
+        "version" : "1.3.0"
       }
     },
     {
@@ -204,8 +213,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-nio-extras.git",
       "state" : {
-        "revision" : "f1f6f772198bee35d99dd145f1513d8581a54f2c",
-        "version" : "1.26.0"
+        "revision" : "24cb15c9bc05e3e9eb5ebaf3d28517d42537bfb1",
+        "version" : "1.27.1"
       }
     },
     {
@@ -267,8 +276,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-system.git",
       "state" : {
-        "revision" : "a34201439c74b53f0fd71ef11741af7e7caf01e1",
-        "version" : "1.4.2"
+        "revision" : "61e4ca4b81b9e09e2ec863b00c340eb13497dac6",
+        "version" : "1.5.0"
       }
     },
     {
@@ -294,8 +303,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SJJC-Team/whooshing-vapor.git",
       "state" : {
-        "revision" : "fb94ebdd4e09480054d5afa56339e866cf7f0208",
-        "version" : "1.0.0"
+        "revision" : "1a5f4ff2d3f46fd758022bba97aafec09970721d",
+        "version" : "1.0.6"
       }
     },
     {
@@ -303,17 +312,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SJJC-Team/whooshing.toolbox-basic.git",
       "state" : {
-        "revision" : "ca822e70c54f50c054ff59a5c3904863ca46e3e2",
-        "version" : "1.3.4"
+        "revision" : "1d691ee9bdb331dd178e9965e9773fc8314d91b3",
+        "version" : "1.3.7"
       }
     },
     {
-      "identity" : "whooshing.toolbox-client-vapor",
+      "identity" : "whooshing.toolbox-client",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SJJC-Team/whooshing.toolbox-client-vapor",
+      "location" : "https://github.com/SJJC-Team/whooshing.toolbox-client",
       "state" : {
-        "revision" : "1f279556796ebfac1d39ca308c5fdf21f57f8a67",
-        "version" : "1.1.2"
+        "revision" : "6220c745b391d50014cc22937402b78bce684ced",
+        "version" : "1.2.1"
       }
     },
     {
@@ -321,8 +330,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SJJC-Team/whooshing.toolbox-pgsql.git",
       "state" : {
-        "revision" : "3cff3e50c1d1a5a653661dd8993b861687d0389f",
-        "version" : "1.0.0"
+        "revision" : "5164ad65ae96ae5fd7b1a30950b0e4112f70a2f5",
+        "version" : "1.0.2"
       }
     },
     {
@@ -330,8 +339,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SJJC-Team/whooshing.toolbox-server.git",
       "state" : {
-        "revision" : "3d9822a16ad70e00b3b36161df270d3d63431d22",
-        "version" : "1.0.3"
+        "revision" : "69e2937d7ef005ed428e4455229b6173c7144edf",
+        "version" : "1.0.12"
+      }
+    },
+    {
+      "identity" : "whooshing.toolbox-websocket",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SJJC-Team/whooshing.toolbox-websocket.git",
+      "state" : {
+        "revision" : "37ac313fb01587682aaaf95193df1d0ae1d41932",
+        "version" : "1.1.0"
       }
     }
   ],

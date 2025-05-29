@@ -42,7 +42,7 @@ struct DatabaseDepends {
                     envPrefix + "_DB_1_PASSWORD": key,
                     envPrefix + "_MANAGER_URL": "http://localhost:20000"
                 ]
-                print(envParas.map { "\($0.key)=\($0.value)" }.joined(separator: " "))
+                // print(envParas.map { "\($0.key)=\($0.value)" }.joined(separator: " "))
                 try Sh.PM2.start(configFile: configPath, args: envParas, cwd: webPath, env: env)
             }
         }

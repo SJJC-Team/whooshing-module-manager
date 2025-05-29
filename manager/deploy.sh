@@ -2,12 +2,12 @@
 
 set -e
 
-swift build -c release
-
-cp pm2.config.json .build/x86_64-unknown-linux-gnu/release
-
-mkdir -p /data/whooshing/.manager/web
+swift build --static-swift-stdlib -c release
 
 rm -rf /data/whooshing/.manager/web/bundle
 
-cp -r .build/x86_64-unknown-linux-gnu/release /data/whooshing/.manager/web/bundle
+mkdir -p /data/whooshing/.manager/web/bundle
+
+cp pm2.config.json /data/whooshing/.manager/web/bundle/pm2.config.json
+
+cp -r .build/x86_64-unknown-linux-gnu/release/App /data/whooshing/.manager/web/bundle/App
