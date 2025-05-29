@@ -36,6 +36,8 @@ jobs:
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
+        env: 
+            GITHUB_TOKEN: ${{ secrets.CLWANG_RELEASE_ACCESS }}
         with:
           files: |
             manager-ubuntu22.04-*-static.tar.gz
