@@ -8,15 +8,11 @@ jobs:
   build-and-upload:
     name: Build and Upload All Binaries
     runs-on: ubuntu-22.04
+    container: swift:6.0
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install Swift
-        uses: fwal/setup-swift@v1
-        with:
-          swift-version: "5.10"
 
       - name: Build and package manager
         working-directory: ./manager
