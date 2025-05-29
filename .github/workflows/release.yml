@@ -18,10 +18,9 @@ jobs:
         working-directory: ./manager
         run: |
           swift build --static-swift-stdlib -c release
-          APP_NAME="manager"
           ARCH=$(uname -m)
           OS="ubuntu22.04"
-          OUTPUT="${APP_NAME}-${OS}-${ARCH}-static.tar.gz"
+          OUTPUT="manager-${OS}-${ARCH}-static.tar.gz"
           tar -czvf $OUTPUT -C .build/release App
           mv $OUTPUT ../
 
@@ -29,10 +28,9 @@ jobs:
         working-directory: ./wsm-ctl
         run: |
           swift build --static-swift-stdlib -c release
-          APP_NAME="wsm-ctl"
           ARCH=$(uname -m)
           OS="ubuntu22.04"
-          OUTPUT="${APP_NAME}-${OS}-${ARCH}-static.tar.gz"
+          OUTPUT="wsm-${OS}-${ARCH}-static.tar.gz"
           tar -czvf $OUTPUT -C .build/release wsm
           mv $OUTPUT ../
 
@@ -41,4 +39,4 @@ jobs:
         with:
           files: |
             manager-ubuntu22.04-*-static.tar.gz
-            wsm-ctl-ubuntu22.04-*-static.tar.gz
+            wsm-ubuntu22.04-*-static.tar.gz
