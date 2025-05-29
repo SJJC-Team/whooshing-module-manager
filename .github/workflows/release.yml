@@ -19,7 +19,7 @@ jobs:
         run: |
           swift build --static-swift-stdlib -c release
           ARCH=$(uname -m)
-          OS="ubuntu22.04"
+          OS="ubuntu24.04"
           OUTPUT="manager-${OS}-${ARCH}-static.tar.gz"
           mkdir bundle
           mv .build/release/App bundle/App
@@ -32,7 +32,7 @@ jobs:
         run: |
           swift build --static-swift-stdlib -c release
           ARCH=$(uname -m)
-          OS="ubuntu22.04"
+          OS="ubuntu24.04"
           OUTPUT="wsm-${OS}-${ARCH}-static.tar.gz"
           tar -czvf $OUTPUT -C .build/release wsm
           mv $OUTPUT ../
@@ -43,5 +43,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CLWANG_RELEASE_ACCESS }}
         with:
           files: |
-            manager-ubuntu22.04-*-static.tar.gz
-            wsm-ubuntu22.04-*-static.tar.gz
+            manager-ubuntu24.04-*-static.tar.gz
+            wsm-ubuntu24.04-*-static.tar.gz
