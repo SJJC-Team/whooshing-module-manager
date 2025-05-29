@@ -8,7 +8,7 @@ jobs:
   build-and-upload:
     name: Build and Upload All Binaries
     runs-on: ubuntu-22.04
-    container: swift:5.10.1-jammy
+    container: swift:6.0.3-focal
 
     steps:
       - name: Checkout code
