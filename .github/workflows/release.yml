@@ -27,6 +27,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CLWANG_RELEASE_ACCESS }}
         with:
-          files: |
-            manager-ubuntu24.04-*-static.tar.gz
-            wsm-ubuntu24.04-*-static.tar.gz
+          files: *.tar.gz
