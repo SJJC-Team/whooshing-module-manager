@@ -1,22 +1,24 @@
+import Foundation
+
 extension Yaml.MODULE {
-    func create(env: Env, depends: Depends) throws { 
+    func create(env: Env, depends: Depends, filePath: String) throws { 
         try Module.Action.create(name: name, env: env, depends: depends)
-        try self.pgsql.forEach { try $0.create(module: name, env: env, depends: depends) }
+        try self.pgsql.forEach { try $0.create(module: name, env: env, depends: depends, filePath: filePath) }
         for bundle in self.serviceBundles { 
-            try bundle.create(module: name, inline: self.sharedInline, pgSqls: self.pgsql, relativeDomain: self.domain, env: env, depends: depends) 
+            try bundle.create(module: name, inline: self.sharedInline, pgSqls: self.pgsql, relativeDomain: self.domain, env: env, depends: depends, filePath: filePath) 
         }
     }
 }
 
 extension Yaml.PGSQL {
-    func create(module: String, env: Env, depends: Depends) throws {
+    func create(module: String, env: Env, depends: Depends, filePath: String) throws {
         try PgService.Action.create(module: module, port: port, env: env, depends: depends)
         try PgDatabase.Action.create(module: module, port: port, database: database, env: env, depends: depends)
     }
 }
 
 extension Yaml.SERVICE_BUNDLE {
-    func create(module: String, inline: Yaml.INLINE, pgSqls: [Yaml.PGSQL], relativeDomain: String?, env: Env, depends: Depends) throws {
+    func create(module: String, inline: Yaml.INLINE, pgSqls: [Yaml.PGSQL], relativeDomain: String?, env: Env, depends: Depends, filePath: String) throws {
         var serParas: [WebService.C.Paras] = []
         serParas.append(WebService.C.Paras(domain: nil, serviceType: .inline, port: inline.port, dbPorts: inline.pgDatabasePorts, dbNames: try getDbNames(for: inline.pgDatabasePorts)))
         if let apiSer = api { 
@@ -41,7 +43,7 @@ extension Yaml.SERVICE_BUNDLE {
                 )
             ) 
         }
-        try WebService.Action.create(module: module, name: name, serviceParas: serParas, bundle: path, env: env, depends: depends)
+        try WebService.Action.create(module: module, name: name, serviceParas: serParas, bundle: resolvePath(basePath: filePath, append: path), env: env, depends: depends)
 
         func getDbNames(for ports: [Int]) throws -> [String] {
             var res: [String] = []
@@ -51,5 +53,19 @@ extension Yaml.SERVICE_BUNDLE {
             }
             return res
         }
+    }
+
+    /// 拼接路径的实用函数
+    private func resolvePath(basePath: String, append pathToAppend: String) -> String {
+        let base = (basePath as NSString).expandingTildeInPath
+        let baseURL = URL(fileURLWithPath: base).deletingLastPathComponent()
+        let appended = (pathToAppend as NSString).expandingTildeInPath
+        let finalURL: URL
+        if appended.hasPrefix("/") {
+            finalURL = URL(fileURLWithPath: appended)
+        } else {
+            finalURL = baseURL.appendingPathComponent(appended)
+        }
+        return finalURL.standardized.path
     }
 }

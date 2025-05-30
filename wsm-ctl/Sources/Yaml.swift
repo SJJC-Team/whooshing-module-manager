@@ -6,9 +6,9 @@ struct Yaml {
         return .init(try d.map { try Top.parse(data: $0.value, name: $0.key, keyPath: "/" + $0.key) })
     }
     private init(_ tops: [Top]) { self.tops = tops }
-    func create() throws {
+    func create(filePath: String) throws {
         let env = try Env()
-        for top in tops { try top.create(env: env, depends: Depends(env: env)) }
+        for top in tops { try top.create(env: env, depends: Depends(env: env), filePath: filePath) }
         print("Yaml 配置创建成功".succ)
     }
 }
