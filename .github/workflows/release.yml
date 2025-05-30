@@ -46,4 +46,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.CLWANG_RELEASE_ACCESS }}
         with:
-          files: *.tar.gz
+          files: |
+            *.tar.gz
