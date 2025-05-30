@@ -1,4 +1,4 @@
-name: Unit Test
+name: Unit Test-Wsm
 permissions:
   contents: read
 concurrency:
