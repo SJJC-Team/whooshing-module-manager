@@ -16,5 +16,5 @@ jobs:
       with_musl: false
       with_api_check: false
       only_build: true
-      work_dir: "./wsm"
+      work_dir: "wsm"
     secrets: inherit

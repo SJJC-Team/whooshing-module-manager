@@ -16,6 +16,6 @@ jobs:
       with_musl: false
       with_api_check: false
       only_build: true
-      work_dir: "./manager"
+      work_dir: "manager"
     secrets: inherit
  
