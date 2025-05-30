@@ -378,7 +378,11 @@ struct FS {
         case envContentNotValid = "要写入的 Env 内容无效"
     }
 
+    #if os(macOS) || os(iOS) || os(tvOS) || os(watchOS)
     nonisolated(unsafe) static let fileManager = FileManager.default
+    #else
+    static let fileManager = FileManager.default
+    #endif
 
     static func ls(path: String, dir: Bool = false, hiddenFile: Bool = false) throws -> [String] {
         guard let files = try? fileManager.contentsOfDirectory(atPath: path) else { throw Err.dirTraversalFailed.d(path) }
