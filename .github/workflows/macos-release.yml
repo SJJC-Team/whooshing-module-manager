@@ -45,11 +45,11 @@ jobs:
 
       - name: Build and package manager
         working-directory: ./manager
-        run: bash ./release.sh
+        run: bash ./release.sh xcode ${{ matrix.xcode-version }}
 
       - name: Build and package wsm-ctl
         working-directory: ./wsm-ctl
-        run: bash ./release.sh
+        run: bash ./release.sh xcode ${{ matrix.xcode-version }}
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
