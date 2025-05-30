@@ -7,7 +7,7 @@ on:
 jobs:
   build-and-upload:
     name: Build and Upload All Binaries
-    runs-on: ubuntu-noble
+    runs-on: ubuntu-24.04
     container: swift:6.0-noble
 
     steps:
