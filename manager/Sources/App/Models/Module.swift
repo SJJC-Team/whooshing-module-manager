@@ -7,6 +7,7 @@ final class Module: PGModel, @unchecked Sendable  {
     static let name: String = "modules"
 
     struct Fields: PGFields {
+        static var tdeEncrypt: Bool { !Woo.isIndependentDebug }
         let id = PGField("id", .uuid)
         let name = PGField("name", .string).cons([.required])
         let serviceId = PGField("service_id", .uuid).cons([.required])

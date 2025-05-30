@@ -6,6 +6,7 @@ final class Domain: PGModel, @unchecked Sendable  {
     static let name: String = "domains"
 
     struct Fields: PGFields {
+        static var tdeEncrypt: Bool { !Woo.isIndependentDebug }
         let id = PGField("id", .uuid)
         let domain = PGField("domain", .string, true).cons([.required])
         let port = PGField("port", .int, true).cons([.required])

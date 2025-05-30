@@ -32,13 +32,32 @@ enum Entrypoint {
     /// 配置该服务模块是否接受运行在测试环境中，可将其改为 false
     /// 这样，若检测到环境为 testing 将会直接 fatalError
     /// 另请详见 ``Whooshing.Mode``
-    static let testingAllowed = false
+    static let testingAllowed = true
+    
+    // 初始化你的 PostgreSQL 配置，此处设置，将连接到所有的服务模块，你也可以提供为不同的子模块提供不同的数据库
+    // 这些参数仅在独立测试环境中可用
+    // 生产环境中将由 Whooshing 系统提供加密数据库
+    static let dataBases: [Environment.DB] = [
+        .init(
+            name: "postgres",
+            port: 5432,
+            user: "clwang",
+            password: "password"
+        )
+    ]
     
     static func main() async throws {
-        var httpsMode = Whooshing<Https>.Mode.detect(testingAllowed ? UnsafeDebuggingOnly.httpsDebuggingData() : nil)
+        var httpsMode = Whooshing<Https>.Mode.detect(testingAllowed ? UnsafeDebuggingOnly.httpsDebuggingData(databaseConfigs: dataBases) : nil)
         try LoggingSystem.bootstrap(from: &httpsMode.envrionment)
+        Woo.isIndependentDebug = httpsMode.envrionment != .production && testingAllowed
         let https = try await Whooshing.make(httpsMode)
-        try await Configuration.https(https, app: https.app)
+        do {
+            try await Configuration.https(https, app: https.app)
+        } catch {
+            https.logger.report(error: error)
+            try? await https.asyncShutdown()
+            throw error
+        }
         Woo.https = https
 
         let domainForward = DomainForward()
@@ -49,11 +68,9 @@ enum Entrypoint {
     }
 }
 
-@MainActor
 struct Woo {
-    #if HTTPS
-    fileprivate(set) static var https: Whooshing<Https>!
-    #endif
+    fileprivate(set) nonisolated(unsafe) static var isIndependentDebug = true
+    fileprivate(set) nonisolated(unsafe) static var https: Whooshing<Https>!
 }
 
 struct UnsafeDebuggingOnly {

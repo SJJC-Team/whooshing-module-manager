@@ -162,7 +162,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
                 return
             }
 
-            let hostArr = hostStr.split(separator: ": ")
+            let hostArr = hostStr.components(separatedBy: ": ")
             
             guard hostArr.count == 2 else {
                 let err = DomainForwardErr.protocolError.d("Host 字段不符合 HTTP 规范", 13062)
