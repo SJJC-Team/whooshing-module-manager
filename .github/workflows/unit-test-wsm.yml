@@ -18,3 +18,4 @@ jobs:
       only_build: true
       work_dir: "./wsm"
     secrets: inherit
+  
