@@ -8,7 +8,7 @@ jobs:
   build-and-upload:
     name: Build and Upload All Binaries
     runs-on: ubuntu-24.04
-    container: swift:6.0-noble
+    container: swift:6.0
 
     steps:
       - name: Checkout code
@@ -16,26 +16,11 @@ jobs:
 
       - name: Build and package manager
         working-directory: ./manager
-        run: |
-          swift build --static-swift-stdlib -c release
-          ARCH=$(uname -m)
-          OS="ubuntu24.04"
-          OUTPUT="manager-${OS}-${ARCH}-static.tar.gz"
-          mkdir bundle
-          mv .build/release/App bundle/App
-          mv pm2.config.json bundle/pm2.config.json
-          tar -czvf $OUTPUT -C bundle .
-          mv $OUTPUT ../
+        run: bash ./release.sh
 
       - name: Build and package wsm-ctl
         working-directory: ./wsm-ctl
-        run: |
-          swift build --static-swift-stdlib -c release
-          ARCH=$(uname -m)
-          OS="ubuntu24.04"
-          OUTPUT="wsm-${OS}-${ARCH}-static.tar.gz"
-          tar -czvf $OUTPUT -C .build/release wsm
-          mv $OUTPUT ../
+        run: bash ./release.sh
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
