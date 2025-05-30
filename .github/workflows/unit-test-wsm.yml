@@ -1,0 +1,20 @@
+name: Unit Test-Wsm
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request: { types: [opened, reopened, synchronize, ready_for_review] }
+  push: { branches: [ develop ] }
+
+jobs:
+  unit-tests:
+    uses: SJJC-Team/ci/.github/workflows/run-unit-tests.yml@develop
+    with:
+      with_release_mode_testing: true
+      with_musl: false
+      with_api_check: false
+      only_build: true
+      work_dir: "wsm-ctl"
+    secrets: inherit

@@ -378,15 +378,15 @@ struct FS {
         case envContentNotValid = "要写入的 Env 内容无效"
     }
 
-    static let fileManager = FileManager.default
+    nonisolated(unsafe) static let fileManager = FileManager.default
 
     static func ls(path: String, dir: Bool = false, hiddenFile: Bool = false) throws -> [String] {
         guard let files = try? fileManager.contentsOfDirectory(atPath: path) else { throw Err.dirTraversalFailed.d(path) }
         return files.filter { (file) -> Bool in
-            var isDir: Bool = false
-            let _ = fileManager.fileExists(atPath: path.appendingPathComponent(file), isDirectory: &isDir)
+            var isDir: ObjCBool = false
+            let _ = fileManager.fileExists(atPath: NSString(string: path).appendingPathComponent(file), isDirectory: &isDir)
             let isHidden = file.hasPrefix(".")
-            return isDir == dir && (hiddenFile || !isHidden)
+            return isDir.boolValue == dir && (hiddenFile || !isHidden)
         }
     }
 
@@ -450,9 +450,9 @@ struct FS {
     }
 
     static func isExist(path: String, dir: Bool = true) -> Bool {
-        var isDir: Bool = false
+        var isDir: ObjCBool = false
         let exists = fileManager.fileExists(atPath: path, isDirectory: &isDir)
-        return exists && (isDir == dir)
+        return exists && (isDir.boolValue == dir)
     }
     
     static func setPermissions(path: String, owner: String, group: String, permissions: Int, recursive: Bool = false) throws {
@@ -467,7 +467,7 @@ struct FS {
         if recursive {
             let enumerator = fileManager.enumerator(atPath: path)
             while let element = enumerator?.nextObject() as? String {
-                let fullPath = path.appendingPathComponent(element)
+                let fullPath = NSString(string: path).appendingPathComponent(element)
                 do { try fileManager.setAttributes(attributes, ofItemAtPath: fullPath) } catch let err { throw Err.setPermissionFailed.d(err.localizedDescription) }
             }
         }

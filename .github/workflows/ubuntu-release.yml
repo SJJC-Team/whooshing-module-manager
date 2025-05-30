@@ -1,4 +1,4 @@
-name: Release All Binaries
+name: Release Tag Workflow - Ubuntu
 
 on:
   release:
@@ -6,9 +6,14 @@ on:
 
 jobs:
   build-and-upload:
-    name: Build and Upload All Binaries
-    runs-on: ubuntu-24.04
-    container: swift:6.0
+    name: Ubuntu-Release
+    runs-on: ${{ matrix.os }}
+    container: swift:${{ matrix.swift_version }}
+
+    strategy:
+      matrix:
+        os: ["ubuntu-22.04", "ubuntu-24.04"]
+        swift_version: ["6.0", "6.1"]
 
     steps:
       - name: Checkout code
@@ -35,11 +40,11 @@ jobs:
 
       - name: Build and package manager
         working-directory: ./manager
-        run: bash ./release.sh
+        run: bash ./release.sh swift ${{ matrix.swift_version }}
 
       - name: Build and package wsm-ctl
         working-directory: ./wsm-ctl
-        run: bash ./release.sh
+        run: bash ./release.sh swift ${{ matrix.swift_version }}
 
       - name: Upload binaries to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -47,4 +52,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.CLWANG_RELEASE_ACCESS }}
         with:
           files: |
-            *.tar.gz
+            release/*.tar.gz

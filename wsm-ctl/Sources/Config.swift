@@ -20,7 +20,7 @@ struct Config: LCDS {
             try paraAvailable(file: file, env: env)
             guard let data = try Yams.load(yaml: try String(contentsOfFile: file, encoding: .utf8)) else { throw Err.parseFailed.d(file) }
             let res = try Yaml.parse(data: data, filePath: file)
-            try res.create()
+            try res.create(filePath: file)
         }
     }
 
