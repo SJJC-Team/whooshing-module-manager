@@ -41,7 +41,7 @@ extension Module {
             case deleteModuleFailed = "删除模块失败"
             case queryDatabaseFailed = "查询数据库失败"
             case missingModuleConfig = "模块配置异常缺失"
-        }   
+        }
 
         static func paraAvailable(module: String, env: Env, depends: Depends) throws -> DBModel.Module {
             try NoCheck.paraAvailable(module: module, env: env)
@@ -115,6 +115,27 @@ extension Module {
                 try Sh.Vault.moduleBackup(module: name, backupName: backupName, env: env)
                 try FS.mkdir(path: env.dataDir + "/.trash", slience: true, withIntermediates: true)
                 try FS.mv(path: dir, to: env.dataDir + "/.trash/" + backupName)
+            }
+
+            static func initIfNeeded(name: String, basePort: Int, env: Env) throws {
+                var log = false
+                do {
+                    try paraAvailable(module: name, env: env)
+                } catch {
+                    print("模块不存在，正在初始化...".info)
+                    log = true
+                    try create(name: name, env: env, basePort: basePort) 
+                }
+
+                if (try? Sh.Vault.isExistEngine(module: name, env: env)) == false { 
+                    print("模块密钥引擎不存在，正在初始化...".info)
+                    log = true
+                    try? Sh.Vault.newEngine(module: name, env: env)
+                }
+                
+                if log {
+                    print("模块初始化完成".succ)
+                }
             }
         }
     }

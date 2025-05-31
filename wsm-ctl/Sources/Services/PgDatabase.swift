@@ -105,6 +105,15 @@ extension PgDatabase {
                 try Sh.PG.Db.delete(port: p, db: database, key: key, env: env)
                 try Sh.Vault.deleteKey(in: "\(module)/\(port)/tde/\(database)_1", env: env)
             }
+
+            static func initIfNeeded(module: String, port: Int, database: String, env: Env, basePort: Int) throws {
+                let _ = try checkService(module: module, port: port, env: env, basePort: basePort)
+                if try list(module: module, port: port, env: env, basePort: basePort).first(where: { $0.db == database }) == nil { 
+                    print("数据库不存在，正在初始化...".info)
+                    try NoCheck.create(module: module, port: port, database: database, env: env, basePort: basePort) 
+                    print("数据库初始化完成".succ)
+                }
+            }
         }
     }
 }

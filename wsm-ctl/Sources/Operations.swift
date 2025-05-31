@@ -13,6 +13,7 @@ struct Sh {
         enum Shell: String {
             case vaultLogin = "vault_login"
             case vaultNewEngine = "vault_new_engine"
+            case vaultEngineDetect = "vault_engine_detect"
             case vaultModuleBackup = "vault_module_backup"
             case vaultNewKey = "vault_new_key"
             case vaultGetKey = "vault_get_key"
@@ -71,6 +72,15 @@ struct Sh {
             switch res.code {
                 case 1: throw Err.vaultEngineExist.d(module)
                 case 0: print("密钥引擎创建成功".succ)
+                default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+
+        static func isExistEngine(module: String, env: Env) throws -> Bool {
+            let res = try run(in: File.sh(.vaultEngineDetect), paras: ["module": module], env: env)
+            switch res.code {
+                case 1: return false
+                case 0: return true
                 default: throw Err.vaultUnknowError.d(String(data: res.res, encoding: .utf8)!)
             }
         }

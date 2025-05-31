@@ -55,7 +55,7 @@ struct PgService: LCDS {
         @Argument(help: "模块名称") var module: String
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "PostgreSQL 服务的监听端口号") var ports: [Int]
         var paras: [Int] { ports }
-        func one(para port: Int, i: Int, env: Env) throws { try Action.restart(module: module, port: port, env: env) }
+        func one(para port: Int, i: Int, env: Env, depends: Depends) throws { try Action.restart(module: module, port: port, env: env, depends: depends) }
     }
 
     struct Start: LCDExpand {
@@ -104,14 +104,17 @@ extension PgService {
             try NoCheck.delete(module: module, port: port, env: env, basePort: res.startPort)
         }
 
-        static func restart(module: String, port: Int, env: Env) throws {
-            try NoCheck.paraAvailable(module: module, port: port, env: env)
-            let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
-            try Sh.PG.restart(dataDir: dataDir, env: env)
+        static func restart(module: String, port: Int, env: Env, depends: Depends) throws {
+            let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
+            let p = res.startPort + port
+            guard try Sh.isServing(port: p) else { throw Err.serviceIsNotRunning.d("\(p)[\(res.startPort) + \(port)]") }
+            try NoCheck.restart(module: module, port: port, env: env)
         }
 
         static func stop(module: String, port: Int, env: Env, depends: Depends) throws {
             let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
+            let p = res.startPort + port
+            guard try Sh.isServing(port: p) else { throw Err.serviceIsNotRunning.d("\(p)[\(res.startPort) + \(port)]") }
             try NoCheck.stop(module: module, port: port, env: env, basePort: res.startPort)
         }
 
@@ -119,8 +122,7 @@ extension PgService {
             let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
             let p = res.startPort + port
             guard !(try Sh.isServing(port: p)) else { throw Err.serviceIsRunning.d("\(p)[\(res.startPort) + \(port)]") }
-            let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
-            try Sh.PG.start(dataDir: dataDir, env: env)
+            try NoCheck.start(module: module, port: port, env: env)
         }
 
         struct NoCheck {
@@ -189,6 +191,45 @@ extension PgService {
                 guard try Sh.isServing(port: p) else { throw Err.serviceIsNotRunning.d("\(p)[\(basePort) + \(port)]") }
                 let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
                 try Sh.PG.stop(dataDir: dataDir, env: env)
+            }
+
+            static func restart(module: String, port: Int, env: Env) throws {
+                try NoCheck.paraAvailable(module: module, port: port, env: env)
+                let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
+                try Sh.PG.restart(dataDir: dataDir, env: env)
+            }
+
+            static func start(module: String, port: Int, env: Env) throws {
+                try paraAvailable(module: module, port: port, env: env)
+                let dataDir = "\(env.dataDir)/\(module)/percona/\(port)"
+                try Sh.PG.start(dataDir: dataDir, env: env)
+            }
+
+            static func initIfNeeded(module: String, port: Int, basePort: Int, env: Env) throws {
+                var log = false
+                do {
+                    try paraAvailable(module: module, port: port, env: env)
+                } catch {
+                    print("PG 服务不存在，正在初始化...".info)
+                    log = true
+                    try create(module: module, port: port, env: env, basePort: basePort)
+                }
+
+                if (try? Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)) == nil { 
+                    print("PG 密钥不存在，正在初始化...".info)
+                    log = true
+                    try Sh.Vault.newKey(in: "\(module)/\(port)/role/woo", env: env)
+                }
+                let p = basePort + port
+                if try Sh.isServing(port: p) == false {
+                    print("PG 未运行，正在运行...".info)
+                    log = true
+                    try start(module: module, port: port, env: env)
+                }
+
+                if log {
+                    print("PG 服务初始化完成".succ)
+                }
             }
         }
     }
