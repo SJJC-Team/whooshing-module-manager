@@ -65,6 +65,7 @@ OUTPUT="$name-${OS}-${ARCH}-${LABEL}-${SWIFT_VERSION}.tar.gz"
 
 sudo mkdir bundle
 sudo cp .build/release/App bundle/App
+sudo cp -r .build/release/*.bundle bundle/
 sudo cp -r .build/release/*.resources bundle/
 sudo cp pm2.config.json bundle/pm2.config.json
 sudo tar -czvf $OUTPUT bundle/
