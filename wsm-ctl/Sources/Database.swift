@@ -22,7 +22,7 @@ struct DatabaseDepends {
             PgDatabase.Action.NoCheck.list(module: moduleName, port: port, env: env, basePort: basePort).first(where: { $0.db == Self.database }) == nil ||
             Sh.PM2.isServing(name: "Whooshing.Manager", env: env) == false
 
-        if needInit { print("需要进行系统初始化 ------------------------------------".info) }
+        if needInit { print("需要进行系统初始化 --------------------------------".info) }
 
         try Module.Action.NoCheck.initIfNeeded(name: moduleName, basePort: basePort, env: env)
         try PgService.Action.NoCheck.initIfNeeded(module: moduleName, port: port, basePort: basePort, env: env)
