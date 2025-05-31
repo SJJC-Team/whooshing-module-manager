@@ -65,8 +65,9 @@ swift build --static-swift-stdlib -c release
 ARCH=$(uname -m)
 OUTPUT="$name-${OS}-${ARCH}-${LABEL}-${SWIFT_VERSION}.tar.gz"
 
-mkdir wsm
-cp .build/release/wsm wsm/wsm
-cp -r .build/release/*.resources wsm/
-tar -czvf $OUTPUT wsm/
-mv $OUTPUT ../
+sudo mkdir wsm
+sudo cp .build/release/wsm wsm/wsm
+sudo cp -r .build/release/*.resources wsm/
+sudo cp -r .build/release/*.bundle wsm/
+sudo tar -czvf $OUTPUT wsm/
+sudo mv $OUTPUT ../
