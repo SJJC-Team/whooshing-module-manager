@@ -8,11 +8,12 @@ struct WSM: ParsableCommand {
     static let configuration = CommandConfiguration(
         subcommands: Config.subCmds,
         groupedSubcommands: [
+            .init(name: Github.help + "管理", subcommands: Github.subCmds),
             .init(name: Module.help + "管理", subcommands: Module.subCmds),
             .init(name: PgService.help + "管理", subcommands: PgService.subCmds),
             .init(name: PgDatabase.help + "管理", subcommands: PgDatabase.subCmds),
             .init(name: WebService.help + "管理", subcommands: WebService.subCmds),
-        ], defaultSubcommand: Config.C.self
+        ]
     )
 }
 

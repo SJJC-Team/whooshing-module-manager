@@ -65,8 +65,8 @@ extension LCDS {
 
 extension LCDCmd {
     static var shortName: String? { String(Self.name.prefix(1)) }
-    static var cmdName: String { Self.Super.reverseCmd == false ? Self.name + "-" + Super.name : Super.name + "-" + Self.name }
-    static var cmdShortName: String? { (Self.shortName != nil && Super.shortName != nil) ?  (Self.Super.reverseCmd == false ? Self.shortName! + "-" + Super.shortName! : Super.shortName! + "-" + Self.shortName!) : nil }
+    static var cmdName: String { Self.Super.reverseCmd == false ? Self.name + (Super.name.isEmpty ? "" : "-" + Super.name) : (Super.name.isEmpty ? "" : Super.name + "-") + Self.name }
+    static var cmdShortName: String? { (Self.shortName != nil && Super.shortName != nil) ?  (Self.Super.reverseCmd == false ? Self.shortName! + (Super.shortName!.isEmpty ? "" : "-" + Super.shortName!) : (Super.shortName!.isEmpty ? "" : Super.shortName! + "-") + Self.shortName!) : nil }
     static var help: String { "" }
     static var configuration: CommandConfiguration { Self.cmdShortName != nil ? .init(commandName: Self.cmdShortName!, abstract: Self.help + Super.help, aliases: [Self.cmdName]) : .init(commandName: Self.cmdName, abstract: Self.help + Super.help) }
     
@@ -110,10 +110,10 @@ extension LCDExpand {
 }
 
 protocol List: LCDCmd {}
-extension List { static var name: String { "list" }; static var shortName: String? { "li" }; static var help: String { "列出 " } }
+extension List { static var name: String { "list" }; static var shortName: String? { "ls" }; static var help: String { "列出 " } }
 protocol Delete: LCDExpand {}
-extension Delete { static var name: String { "delete" }; static var shortName: String? { "del" }; static var help: String { "删除 " } }
+extension Delete { static var name: String { "remove" }; static var shortName: String? { "rm" }; static var help: String { "删除 " } }
 protocol Stop: LCDExpand {}
-extension Stop { static var name: String { "stop" }; static var shortName: String? { "stp" }; static var help: String { "停止 " } }
+extension Stop { static var name: String { "stop" }; static var shortName: String? { "sp" }; static var help: String { "停止 " } }
 protocol Create: LCDExpand {}
-extension Create { static var name: String { "create" }; static var shortName: String? { "cre" }; static var help: String { "创建 " } }
+extension Create { static var name: String { "make" }; static var shortName: String? { "mk" }; static var help: String { "创建 " } }

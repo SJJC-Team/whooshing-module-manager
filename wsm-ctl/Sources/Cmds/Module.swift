@@ -5,7 +5,7 @@ import Fluent
 
 struct Module: LCDS {
     static let name = "module"
-    static let shortName: String? = nil
+    static let shortName: String? = "mod"
     static let paraLabel = "模块"
     static let help = "模块"
     static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self]
@@ -105,7 +105,7 @@ extension Module {
                 try paraAvailable(module: name, env: env)
                 try Sh.Vault.login(env: env)
                 let dir = env.dataDir + "/" + name
-                let dbs = try PgService.Action.NoCheck.list(module: name,  env: env, basePort: basePort)
+                let dbs = try PgService.Action.NoCheck.list(module: name, basePort: basePort, env: env)
                 guard dbs.count == 0 else { 
                     print("该模块还有以下 PostgreSQL 服务模块，请先删除:".warn)
                     for db in dbs { print(db.info) }

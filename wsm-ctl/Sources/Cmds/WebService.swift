@@ -12,7 +12,7 @@ struct WebService: LCDS {
     }
     
     static let name = "webservice"
-    static let shortName: String? = nil
+    static let shortName: String? = "web"
     static let paraLabel = "端口"
     static let help = "网络后端服务"
     static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self, S.self, Restart.self, Start.self]
@@ -100,7 +100,7 @@ struct WebService: LCDS {
     struct Restart: LCDExpand {
         typealias Super = WebService
         static var name: String { "restart" }
-        static var shortName: String? { "resta" }
+        static let shortName: String? = nil
         static var help: String { "重启 " }
 
         @Argument(help: "模块名称") var module: String
@@ -112,7 +112,7 @@ struct WebService: LCDS {
     struct Start: LCDExpand {
         typealias Super = WebService
         static var name: String { "start" }
-        static var shortName: String? { "sta" }
+        static let shortName: String? = nil
         static var help: String { "启动 " }
 
         @Argument(help: "模块名称") var module: String

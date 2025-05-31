@@ -3,7 +3,7 @@ import Foundation
 
 struct PgDatabase: LCDS {
     static let name = "pgdatabase"
-    static let shortName: String? = nil
+    static let shortName: String? = "db"
     static let paraLabel = "数据库"
     static let help = "PostgreSQL 数据库"
     static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self]

@@ -20,6 +20,7 @@ struct Sh {
             case vaultDbBackup = "vault_db_backup"
             case vaultDeleteKey = "vault_delete_key"
             case pgCreateService = "pg_create_service"
+            case pgUpdateServicePort = "pg_update_service_port"
             case pgRestartService = "pg_restart_service"
             case pgStartService = "pg_start_service"
             case pgStopService = "pg_stop_service"
@@ -33,6 +34,8 @@ struct Sh {
             case nginxNewHttp = "nginx_new_http"
             case nginxNewHttps = "nginx_new_https"
             case nginxDeleteConf = "nginx_delete_conf"
+            case githubModuleGetName = "github_module_get_name"
+            case githubModuleUnzip = "github_module_unzip"
         }
 
         static func sh(_ shell: Shell) throws -> String {
@@ -164,6 +167,16 @@ struct Sh {
             guard res.code == 0 else { throw Err.pgUnknowError.d(String(data: res.res, encoding: .utf8)!) }
             guard let _ = String(data: res.res, encoding: .utf8) else { throw Err.pgUnknowError.d("PostgreSQL 服务初始化输出解包失败-\(module).\(port)") }
             print("PostgreSQL 服务 \(module).\(port) 初始化成功".succ)
+        }
+        
+        static func update(module: String, port: Int, basePort: Int, env: Env) throws {
+            let res = try run(in: File.sh(.pgUpdateServicePort), paras: [
+                "module": module,
+                "p": String(port),
+                "port_base": String(basePort)
+            ], env: env)
+            guard res.code == 0 else { throw Err.pgUnknowError.d(String(data: res.res, encoding: .utf8)!) }
+            print("PostgreSQL 服务 \(module).\(port) 端口修改成功".succ)
         }
 
         static func restart(dataDir: String, env: Env) throws {
@@ -338,6 +351,29 @@ struct Sh {
             }
         }
         
+    }
+
+    struct Github {
+        static func getModuleName(name: String, env: Env) throws -> String {
+            let res = try run(in: File.sh(.githubModuleGetName), paras: ["name": name], env: env)
+            guard var bundleName = String(data: res.res, encoding: .utf8) else { throw Err.nameGetFailed }
+            guard res.code == 0 else { throw Err.nameGetFailed.d(bundleName) }
+            bundleName.removeLast()
+            return bundleName
+        }
+        
+        static func unzip(name: String, des: String, env: Env) throws {
+            let res = try run(in: File.sh(.githubModuleUnzip), paras: ["name": name, "des": des], env: env)
+            switch res.code {
+                case 0: print("\(name).tar.gz 解包完成".succ)
+                default: throw Err.unzipFailed.d(String(data: res.res, encoding: .utf8)!)
+            }
+        }
+
+        enum Err: String, ErrList {
+            case nameGetFailed = "名称解析失败，未知错误"
+            case unzipFailed = "解包 tar.gz 失败，未知错误"
+        }
     }
 
     static func isServing(port: Int) throws -> Bool {
