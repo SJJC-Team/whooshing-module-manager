@@ -356,8 +356,9 @@ struct Sh {
     struct Github {
         static func getModuleName(name: String, env: Env) throws -> String {
             let res = try run(in: File.sh(.githubModuleGetName), paras: ["name": name], env: env)
-            guard let bundleName = String(data: res.res, encoding: .utf8) else { throw Err.nameGetFailed }
+            guard var bundleName = String(data: res.res, encoding: .utf8) else { throw Err.nameGetFailed }
             guard res.code == 0 else { throw Err.nameGetFailed.d(bundleName) }
+            bundleName.removeLast()
             return bundleName
         }
         

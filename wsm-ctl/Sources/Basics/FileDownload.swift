@@ -32,9 +32,9 @@ extension FS {
                 
                 var i: Int64 = 0
                 for try await chunk in response.body {
-                    try progress(Int(i), size)
                     let res = try await fh.write(contentsOf: chunk, toAbsoluteOffset: i)
                     i += res
+                    try progress(Int(i), size)
                 }
                 
                 try await fh.close()

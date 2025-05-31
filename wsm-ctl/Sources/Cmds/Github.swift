@@ -13,7 +13,7 @@ struct Github: LCDS {
     struct C: Create {
         typealias Super = Github
         @Argument(help: "Github 存储库 URL 链接") var url: String
-        @Argument(help: "服务模块的名称") var name: String
+        @Option(name: .shortAndLong, help: "服务模块的名称") var name: String
         var paras: [String] { [url] }
         static let help: String = "从 Github 下载模块以配置服务"
 
@@ -26,7 +26,7 @@ struct Github: LCDS {
     struct D: Delete {
         typealias Super = Github
         @Argument(help: "Github 存储库 URL 链接") var url: String
-        @Argument(help: "服务模块的名称") var name: String
+        @Option(name: .shortAndLong, help: "服务模块的名称") var name: String
         var paras: [String] { [url] }
         static let help: String = "从 Github 下载模块以删除服务"
         
@@ -39,7 +39,7 @@ struct Github: LCDS {
     struct S: Stop {
         typealias Super = Github
         @Argument(help: "Github 存储库 URL 链接") var url: String
-        @Argument(help: "服务模块的名称") var name: String
+        @Option(name: .shortAndLong, help: "服务模块的名称") var name: String
         var paras: [String] { [url] }
         static let help: String = "从 Github 下载模块以停止服务"
         
@@ -55,7 +55,7 @@ struct Github: LCDS {
         static let shortName: String? = nil
         
         @Argument(help: "Github 存储库 URL 链接") var url: String
-        @Argument(help: "服务模块的名称") var name: String
+        @Option(name: .shortAndLong, help: "服务模块的名称") var name: String
         var paras: [String] { [url] }
         static let help: String = "从 Github 下载模块以启动服务"
         
@@ -72,7 +72,7 @@ struct Github: LCDS {
         static let shortName: String? = nil
         
         @Argument(help: "Github 存储库 URL 链接") var url: String
-        @Argument(help: "服务模块的名称") var name: String
+        @Option(name: .shortAndLong, help: "服务模块的名称") var name: String
         var paras: [String] { [url] }
         static let help: String = "从 Github 下载模块以重启服务"
         
@@ -89,7 +89,7 @@ struct Github: LCDS {
         static let shortName: String? = nil
         
         @Argument(help: "Github 存储库 URL 链接") var url: String
-        @Argument(help: "服务模块的名称") var name: String
+        @Option(name: .shortAndLong, help: "服务模块的名称") var name: String
         var paras: [String] { [url] }
         static let help: String = "从 Github 下载模块以更新服务"
         
@@ -115,24 +115,54 @@ extension Github {
         let githubDir = "\(env.dataDir)/.github/\(bundleName)"
         let tarPath = "\(githubDir)/\(bundleName).tar.gz"
         
+        try? FS.rm(path: githubDir)
+        try FS.mkdir(path: githubDir, slience: false, withIntermediates: true)
+
         print("正在从 github 下载: \"\(url)\"...".info)
         
         let formatter = ByteCountFormatter()
         formatter.allowedUnits = [.useKB, .useMB, .useGB]
         formatter.countStyle = .file
         try FS.download(from: url, to: tarPath) { curSize, totalSize in
-            print("\(Float(curSize) / Float(totalSize) * 100)% \(formatter.string(fromByteCount: Int64(curSize))) -> \(formatter.string(fromByteCount: Int64(totalSize)))")
+            let progress = Float(curSize) / Float(totalSize)
+            let percentage = Int(progress * 100)
+
+            // 进度条宽度（可以调整）
+            let barWidth = 80
+            let filledLength = Int(Float(barWidth) * progress)
+            let bar = String(repeating: "─", count: filledLength) + String(repeating: " ", count: barWidth - filledLength)
+
+            // 格式化文件大小
+            let curStr = formatter.string(fromByteCount: Int64(curSize))
+            let totalStr = formatter.string(fromByteCount: Int64(totalSize))
+
+            // \r 会回到行首并覆盖之前的内容
+            print(String(format: "\r[%@] %3d%% (%@ / %@)", bar, percentage, curStr, totalStr), terminator: "")
+
+            // 当下载完成后换行
+            if curSize == totalSize {
+                print()
+            }
         }
         
-        print("下载完成，文件位于: \"\(tarPath)\"...".succ)
+        print("下载完成".succ)
         
-        print("正在解压 ...")
+        print("正在解压 ...".info)
         
         try Sh.Github.unzip(name: bundleName, des: githubDir, env: env)
         
-        print("解压完成".succ)
+        let configure = "\(githubDir)/module/configure.yaml"
+
+        print("""
+
+        -------------------------------------------------------
+        解压完成, 配置位于: 
+        \(configure)
+        -------------------------------------------------------
+
+        """.succ)
         
-        return "\(githubDir)/module/configure.yaml"
+        return configure
     }
 }
 
