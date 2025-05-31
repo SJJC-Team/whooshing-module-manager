@@ -98,11 +98,6 @@ extension PgService {
             let res = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
             try NoCheck.create(module: module, port: port, basePort: res.startPort, env: env)
         }
-        
-        static func update(module: String, port: Int, env: Env, depends: Depends) throws {
-            let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
-            
-        }
 
         static func delete(module: String, port: Int, env: Env, depends: Depends) throws {
             let res = try paraAvailable(module: module, port: port, env: env, depends: depends)

@@ -15,6 +15,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser", from: "1.5.0"),
         .package(url: "https://github.com/thebarndog/swift-dotenv.git", from: "2.1.0"),
         .package(url: "https://github.com/jpsim/Yams.git", from: "5.1.3"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.0.0"),
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.10.0"),
         .package(url: "https://github.com/SJJC-Team/cloudflare-dns.git", .upToNextMajor(from: "1.0.7")),
         .package(url: "https://github.com/SJJC-Team/whooshing-fluent.git", .upToNextMajor(from: "1.0.0")),
@@ -37,6 +38,8 @@ let package = Package(
                 .product(name: "Cryptos", package: "whooshing.toolbox-basic"),
                 .product(name: "DataConvertable", package: "whooshing.toolbox-basic"),
                 .product(name: "ErrorHandle", package: "whooshing.toolbox-basic"),
+                .product(name: "AsyncHTTPClient", package: "async-http-client"),
+                .product(name: "_NIOFileSystem", package: "swift-nio"),
             ],
             resources: [
                 .process("Shell")

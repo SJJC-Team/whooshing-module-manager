@@ -20,7 +20,11 @@ extension Yaml.MODULE {
 }
 
 extension Yaml.PGSQL {
-    func update(module: String, env: Env, filePath: String, depends: Depends) throws {}
+    func update(module: String, env: Env, filePath: String, depends: Depends) throws {
+        fireAndForget {
+            try PgService.Action.start(module: module, port: port, env: env, depends: depends)
+        }
+    }
 }
 
 extension Yaml.SERVICE_BUNDLE {
