@@ -3,7 +3,7 @@ import Foundation
 
 struct PgService: LCDS {
     static let name = "pgservice"
-    static let shortName: String? = nil
+    static let shortName: String? = "pg"
     static let paraLabel = "端口"
     static let help = "PostgreSQL 服务"
     static let subCmds: [any ParsableCommand.Type] = [L.self, C.self, D.self, S.self, Restart.self, Start.self]
@@ -49,7 +49,7 @@ struct PgService: LCDS {
     struct Restart: LCDExpand {
         typealias Super = PgService
         static let name: String = "restart"
-        static let shortName: String? = "resta"
+        static let shortName: String? = nil
         static let help: String = "重启 "
 
         @Argument(help: "模块名称") var module: String
@@ -61,7 +61,7 @@ struct PgService: LCDS {
     struct Start: LCDExpand {
         typealias Super = PgService
         static let name: String = "start"
-        static let shortName: String? = "sta"
+        static let shortName: String? = nil
         static let help: String = "启动 "
 
         @Argument(help: "模块名称") var module: String
@@ -91,17 +91,22 @@ extension PgService {
 
         static func list(module: String, env: Env, depends: Depends) throws -> [String] {
             let res = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
-            return try NoCheck.list(module: module, env: env, basePort: res.startPort)
+            return try NoCheck.list(module: module, basePort: res.startPort, env: env)
         }
 
         static func create(module: String, port: Int, env: Env, depends: Depends) throws {
             let res = try Module.Action.paraAvailable(module: module, env: env, depends: depends)
-            try NoCheck.create(module: module, port: port, env: env, basePort: res.startPort)
+            try NoCheck.create(module: module, port: port, basePort: res.startPort, env: env)
+        }
+        
+        static func update(module: String, port: Int, env: Env, depends: Depends) throws {
+            let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
+            
         }
 
         static func delete(module: String, port: Int, env: Env, depends: Depends) throws {
             let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
-            try NoCheck.delete(module: module, port: port, env: env, basePort: res.startPort)
+            try NoCheck.delete(module: module, port: port, basePort: res.startPort, env: env)
         }
 
         static func restart(module: String, port: Int, env: Env, depends: Depends) throws {
@@ -115,7 +120,7 @@ extension PgService {
             let res = try paraAvailable(module: module, port: port, env: env, depends: depends)
             let p = res.startPort + port
             guard try Sh.isServing(port: p) else { throw Err.serviceIsNotRunning.d("\(p)[\(res.startPort) + \(port)]") }
-            try NoCheck.stop(module: module, port: port, env: env, basePort: res.startPort)
+            try NoCheck.stop(module: module, port: port, basePort: res.startPort, env: env)
         }
 
         static func start(module: String, port: Int, env: Env, depends: Depends) throws {
@@ -135,14 +140,14 @@ extension PgService {
                 guard FS.isExist(path: dataDir, dir: true) == true else { throw Err.serviceNotFound.d(dataDir) }
             }
 
-            static func list(module: String, env: Env, basePort: Int) throws -> [String] {
+            static func list(module: String, basePort: Int, env: Env) throws -> [String] {
                 let perconaDir = "\(env.dataDir)/\(module)/percona/"
                 try FS.mkdir(path: perconaDir, slience: true, withIntermediates: true, output: false)
                 let dirs = try FS.ls(path: perconaDir, dir: true, hiddenFile: false).map { guard let port = Int($0) else { throw Err.serviceNameInCorrect.d($0) }; return "\(port + basePort)[\(basePort) + \(port)]" }
                 return dirs
             }
 
-            static func create(module: String, port: Int, env: Env, basePort: Int) throws {
+            static func create(module: String, port: Int, basePort: Int, env: Env) throws {
                 try Module.Action.NoCheck.paraAvailable(module: module, env: env)
 
                 let moduleDir = "\(env.dataDir)/\(module)"
@@ -165,13 +170,13 @@ extension PgService {
                     try Sh.PG.restart(dataDir: dataDir, env: env)
                 } catch let err {
                     print("任务失败，正在回退".err)
-                    try? stop(module: module, port: port, env: env, basePort: basePort)
-                    try? delete(module: module, port: port, env: env, basePort: basePort)
+                    try? stop(module: module, port: port, basePort: basePort, env: env)
+                    try? delete(module: module, port: port, basePort: basePort, env: env)
                     throw err
                 }
             }
             
-            static func delete(module: String, port: Int, env: Env, basePort: Int) throws {
+            static func delete(module: String, port: Int, basePort: Int, env: Env) throws {
                 try paraAvailable(module: module, port: port, env: env)
                 let perconaDir =  env.dataDir + "/" + module + "/percona"
                 let dataDir = "\(perconaDir)/\(port)"
@@ -185,7 +190,7 @@ extension PgService {
                 try FS.mv(path: dataDir, to: perconaDir + "/.trash/" + backupName)
             }
 
-            static func stop(module: String, port: Int, env: Env, basePort: Int) throws {
+            static func stop(module: String, port: Int, basePort: Int, env: Env) throws {
                 try paraAvailable(module: module, port: port, env: env)
                 let p = basePort + port
                 guard try Sh.isServing(port: p) else { throw Err.serviceIsNotRunning.d("\(p)[\(basePort) + \(port)]") }
@@ -212,7 +217,7 @@ extension PgService {
                 } catch {
                     print("PG 服务不存在，正在初始化...".info)
                     log = true
-                    try create(module: module, port: port, env: env, basePort: basePort)
+                    try create(module: module, port: port, basePort: basePort, env: env)
                 }
 
                 if (try? Sh.Vault.getKey(in: "\(module)/\(port)/role/woo", env: env)) == nil { 

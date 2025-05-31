@@ -1,16 +1,55 @@
 struct Yaml {
     typealias Top = MODULE
     let tops: [Top]
-    static func parse(data: Any, filePath: String) throws -> Self {
-        guard let d = data as? [String: [String: Any]] else { throw Err.parseFailed.d(filePath) }
-        return .init(try d.map { try Top.parse(data: $0.value, name: $0.key, keyPath: "/" + $0.key) })
+    
+    static func parse(data: [String: [String: Any]], filePath: String) throws -> Self {
+        .init(try data.map { try Top.parse(data: $0.value, name: $0.key, keyPath: "/" + $0.key) })
     }
+    
     private init(_ tops: [Top]) { self.tops = tops }
-    func create(filePath: String) throws {
-        let env = try Env()
-        for top in tops { try top.create(env: env, depends: Depends(env: env), filePath: filePath) }
+    
+    func create(filePath: String, env: Env, depends: Depends) throws {
+        for top in tops {
+            try top.create(env: env, filePath: filePath, depends: depends)
+        }
         print("Yaml 配置创建成功".succ)
     }
+    
+    func delete(filePath: String, env: Env, depends: Depends) {
+        for top in tops {
+            top.delete(env: env, filePath: filePath, depends: depends)
+        }
+        print("Yaml 配置删除完成".succ)
+    }
+    
+    func update(filePath: String, env: Env, depends: Depends) throws {
+        for top in tops {
+            try top.update(env: env, filePath: filePath, depends: depends)
+        }
+        print("Yaml 配置更新完成".succ)
+    }
+    
+    func start(filePath: String, env: Env, depends: Depends) {
+        for top in tops {
+            top.start(env: env, filePath: filePath, depends: depends)
+        }
+        print("Yaml 配置启动完成".succ)
+    }
+    
+    func stop(filePath: String, env: Env, depends: Depends) {
+        for top in tops {
+            top.stop(env: env, filePath: filePath, depends: depends)
+        }
+        print("Yaml 配置停止完成".succ)
+    }
+    
+    func restart(filePath: String, env: Env, depends: Depends) {
+        for top in tops {
+            top.restart(env: env, filePath: filePath, depends: depends)
+        }
+        print("Yaml 配置重启完成".succ)
+    }
+    
 }
 
 extension Yaml {
@@ -113,7 +152,6 @@ extension Yaml {
     }
 
     enum Err: String, ErrList {
-        case parseFailed = "Yaml 文件解析失败"
         case typeIncorrect = "Yaml 配置类型不匹配"
         case missingKey = "Yaml 配置字段缺失"
     }

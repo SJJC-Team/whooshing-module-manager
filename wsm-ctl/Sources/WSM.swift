@@ -12,7 +12,7 @@ struct WSM: ParsableCommand {
             .init(name: PgService.help + "管理", subcommands: PgService.subCmds),
             .init(name: PgDatabase.help + "管理", subcommands: PgDatabase.subCmds),
             .init(name: WebService.help + "管理", subcommands: WebService.subCmds),
-        ], defaultSubcommand: Config.C.self
+        ]
     )
 }
 
