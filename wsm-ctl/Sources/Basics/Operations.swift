@@ -34,8 +34,8 @@ struct Sh {
             case nginxNewHttp = "nginx_new_http"
             case nginxNewHttps = "nginx_new_https"
             case nginxDeleteConf = "nginx_delete_conf"
-            case githubModuleDownload = "github_module_get_name"
             case githubModuleGetName = "github_module_get_name"
+            case githubModuleUnzip = "github_module_unzip"
         }
 
         static func sh(_ shell: Shell) throws -> String {
@@ -360,23 +360,18 @@ struct Sh {
             guard res.code == 0 else { throw Err.nameGetFailed.d(bundleName) }
             return bundleName
         }
-
-        static func download(from url: String, bundleName: String, destinationDir: String, env: Env) throws {
-            let res = try run(in: File.sh(.githubModuleDownload), paras: [
-                "url": url, "name": 
-                bundleName, "des": 
-                destinationDir
-            ], env: env)
-            
+        
+        static func unzip(name: String, des: String, env: Env) throws {
+            let res = try run(in: File.sh(.githubModuleUnzip), paras: ["name": name, "des": des], env: env)
             switch res.code {
-                case 0: print("从 Github 下载成功".succ)
-                default: throw Err.nginxRestartUnknowErr.d(String(data: res.res, encoding: .utf8)!)
+                case 0: print("\(name).tar.gz 解包完成".succ)
+                default: throw Err.unzipFailed.d(String(data: res.res, encoding: .utf8)!)
             }
         }
 
         enum Err: String, ErrList {
             case nameGetFailed = "名称解析失败，未知错误"
-            case downloadUnknowFailed = "Github 下载失败，未知错误"
+            case unzipFailed = "解包 tar.gz 失败，未知错误"
         }
     }
 

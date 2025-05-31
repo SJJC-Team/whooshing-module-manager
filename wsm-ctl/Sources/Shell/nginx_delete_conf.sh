@@ -2,4 +2,4 @@
 
 set -e
 
-rm -f $WHOOSHING_NGINX_DIR/$domain.conf
+rm -f "$WHOOSHING_NGINX_DIR/$domain.conf"

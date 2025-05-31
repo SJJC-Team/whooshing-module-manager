@@ -6,6 +6,7 @@ struct Config: LCDS {
     
     static let name = ""
     static let shortName: String? = ""
+    static let paraLabel = "Yaml 文件配置"
     static let subCmds: [any ParsableCommand.Type] = [
         C.self,
         D.self,
