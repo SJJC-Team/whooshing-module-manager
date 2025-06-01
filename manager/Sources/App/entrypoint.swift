@@ -37,12 +37,18 @@ enum Entrypoint {
     // 初始化你的 PostgreSQL 配置，此处设置，将连接到所有的服务模块，你也可以提供为不同的子模块提供不同的数据库
     // 这些参数仅在独立测试环境中可用
     // 生产环境中将由 Whooshing 系统提供加密数据库
+    //
+    // PostgreSQL 连接的主机名在生产和开发环境中仅仅允许在本地(localhost)
+    // 而在测试环境中，可指定要用于测试的 Pg 服务器主机名
+    // 该字段将会在生产环境中失效，因此标记为 "unsafeTestOnly"
+    // unsafeTestOnlyHost 将会根据环境变量检测是否连接到特定的主机名，主要用于 Github Workflow 的自动测试检查
     static let dataBases: [Environment.DB] = [
         .init(
             name: "postgres",
             port: 5432,
-            user: "clwang",
-            password: "password"
+            user: "postgres",
+            password: "password",
+            unsafeTestOnlyHost: ProcessInfo.processInfo.environment["GITHUB_PG_TESTING_HOST"] ?? "localhost"
         )
     ]
     
