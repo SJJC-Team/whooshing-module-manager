@@ -1,4 +1,4 @@
-name: Unit Test-Wsm
+name: Unit Test
 permissions:
   contents: read
 concurrency:
@@ -9,12 +9,24 @@ on:
   push: { branches: [ develop ] }
 
 jobs:
-  unit-tests:
+  unit-tests-wsm:
     uses: SJJC-Team/ci/.github/workflows/run-unit-tests.yml@develop
     with:
       with_release_mode_testing: true
       with_musl: false
       with_api_check: false
       only_build: true
+      with_pg_test: false
       work_dir: "wsm-ctl"
+    secrets: inherit
+
+  unit-tests-manager:
+    uses: SJJC-Team/ci/.github/workflows/run-unit-tests.yml@develop
+    with:
+      with_release_mode_testing: true
+      with_musl: false
+      with_api_check: false
+      only_build: true
+      with_pg_test: false
+      work_dir: "manager"
     secrets: inherit

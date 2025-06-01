@@ -1,0 +1,20 @@
+name: Release and Package Workflow
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release-and-package-wsm:
+    uses: SJJC-Team/ci/.github/workflows/release.yml@develop
+    with:
+      work_dir: "wsm-ctl"
+    secrets:
+      RELEASE_ACCESS: ${{ secrets.CLWANG_RELEASE_ACCESS }}
+
+  release-and-package-manager:
+    uses: SJJC-Team/ci/.github/workflows/release.yml@develop
+    with:
+      work_dir: "manager"
+    secrets:
+      RELEASE_ACCESS: ${{ secrets.CLWANG_RELEASE_ACCESS }}
