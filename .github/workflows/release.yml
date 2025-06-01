@@ -9,6 +9,7 @@ jobs:
     uses: SJJC-Team/ci/.github/workflows/release.yml@develop
     with:
       work_dir: "wsm-ctl"
+      app_name: "wsm"
     secrets:
       RELEASE_ACCESS: ${{ secrets.CLWANG_RELEASE_ACCESS }}
 
@@ -16,5 +17,6 @@ jobs:
     uses: SJJC-Team/ci/.github/workflows/release.yml@develop
     with:
       work_dir: "manager"
+      app_name: "App"
     secrets:
       RELEASE_ACCESS: ${{ secrets.CLWANG_RELEASE_ACCESS }}
