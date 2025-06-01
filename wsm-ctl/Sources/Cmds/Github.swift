@@ -8,7 +8,7 @@ struct Github: LCDS {
     static let shortName: String? = "git"
     static let paraLabel = "Github 模块配置"
     static let reverseCmd: Bool = true
-    static let subCmds: [any ParsableCommand.Type] = [ C.self ]
+    static let subCmds: [any ParsableCommand.Type] = [ C.self, Update.self ]
 
     struct C: Create {
         typealias Super = Github
@@ -86,7 +86,7 @@ struct Github: LCDS {
         typealias Super = Github
         
         static var name: String { "update" }
-        static let shortName: String? = nil
+        static let shortName: String? = "up"
         
         @Argument(help: "Github 存储库 URL 链接") var url: String
         @Option(name: .shortAndLong, help: "服务模块的名称") var name: String
