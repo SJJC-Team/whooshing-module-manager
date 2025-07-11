@@ -45,7 +45,7 @@ extension Yaml.SERVICE_BUNDLE {
             serviceType: .inline,
             hostname: "localhost",
             port: inline.port,
-            dbServices: try getDbs(for: inline.pgDatabasePorts, service: .inline)
+            dbServices: try getDbs(for: inline.pgPorts, service: .inline)
         ))
         
         if let apiService = api {
@@ -54,7 +54,7 @@ extension Yaml.SERVICE_BUNDLE {
                 serviceType: .api,
                 hostname: apiService.hostname,
                 port: apiService.port,
-                dbServices: try getDbs(for: apiService.pgDatabasePorts, service: .api)
+                dbServices: try getDbs(for: apiService.pgPorts, service: .api)
             ))
         }
         if let httpsService = https {
@@ -63,7 +63,7 @@ extension Yaml.SERVICE_BUNDLE {
                 serviceType: .https,
                 hostname: httpsService.hostname,
                 port: httpsService.port,
-                dbServices: try getDbs(for: httpsService.pgDatabasePorts, service: .https)
+                dbServices: try getDbs(for: httpsService.pgPorts, service: .https)
             ))
         }
         try WebService.Action.create(module: module, name: name, serviceParas: serParas, bundle: resolvePath(basePath: filePath, append: path), env: env, depends: depends)
