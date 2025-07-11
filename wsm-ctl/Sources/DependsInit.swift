@@ -38,10 +38,13 @@ struct DatabaseDepends {
                 envPrefix + "_DB_COUNT": "1",
                 envPrefix + "_NAME": "Manager",
                 envPrefix + "_PORT": String(basePort),
+                envPrefix + "_HOSTNAME": "localhost",
                 envPrefix + "_DB_1_NAME": database,
                 envPrefix + "_DB_1_PORT": String(basePort + port),
-                envPrefix + "_DB_1_USER": "woo",
-                envPrefix + "_DB_1_PASSWORD": key,
+                envPrefix + "_DB_1_DBS_COUNT": "1",
+                envPrefix + "_DB_1_DBS_1_NAME": "manager_\(port)",
+                envPrefix + "_DB_1_DBS_1_USER": "woo",
+                envPrefix + "_DB_1_DBS_1_PASSWORD": key,
                 envPrefix + "_MANAGER_URL": "http://localhost:20000"
             ]
             // print(envParas.map { "\($0.key)=\($0.value)" }.joined(separator: " "))

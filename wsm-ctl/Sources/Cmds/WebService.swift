@@ -337,17 +337,12 @@ extension WebService {
                     else if k.contains("PASSWORD") { paras[k] = try Sh.Vault.getKey(in: v, env: env) }
                     else if k.contains("FILE_STORAGE_KEY") { paras[k] = try Sh.Vault.getKey(in: v, env: env) }
                 }
-                for envName in [
-                    "WHOOSHING_API_SERVICE_MANAGER_URL",
-                    "WHOOSHING_INLINE_SERVICE_MANAGER_URL",
-                    "WHOOSHING_HTTPS_SERVICE_MANAGER_URL",
-                ] {
-                    paras[envName] = "http://localhost:20000"
-                }
+
                 paras["WHOOSHING_INLINE_SERVICE_PRIVATE_SERVICE_ID"] = module.serviceId.uuidString.lowercased()
                 paras["WHOOSHING_API_SERVICE_PRIVATE_AUTHENTICATION_URL"] = "http://localhost:20020"
                 
                 for service in [ServiceType.https, .api, .inline] {
+                    paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_MANAGER_URL"] = "http://localhost:20000"
                     paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_FILE_STORAGE_DIR"] = env.fileStorageRootDir
                     paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_FILE_STORAGE_UNIX_PERMISSION_OWNER_ID"] = String(env.fileStorageOwnerId)
                     paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_FILE_STORAGE_UNIX_PERMISSION_GROUP_ID"] = String(env.fileStorageGroupId)
