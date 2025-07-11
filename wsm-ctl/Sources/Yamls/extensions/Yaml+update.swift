@@ -50,36 +50,39 @@ extension Yaml.SERVICE_BUNDLE {
         print("正在创建新的模块配置...".info)
         
         var serParas: [WebService.C.Paras] = []
-        serParas.append(WebService.C.Paras(domain: nil, serviceType: .inline, port: inline.port, dbPorts: inline.pgDatabasePorts, dbNames: try getDbNames(for: inline.pgDatabasePorts)))
-        if let apiSer = api {
-            serParas.append(
-                WebService.C.Paras(
-                    domain: (relativeDomain != nil && apiSer.domain != nil) ? "\(apiSer.domain!).\(relativeDomain!).\(env.rootDomain)" : nil,
-                    serviceType: .api,
-                    port: apiSer.port,
-                    dbPorts: apiSer.pgDatabasePorts,
-                    dbNames: try getDbNames(for: apiSer.pgDatabasePorts)
-                )
-            )
+        serParas.append(.init(
+            domain: nil,
+            serviceType: .inline,
+            hostname: "localhost",
+            port: inline.port,
+            dbServices: try getDbs(for: inline.pgDatabasePorts, service: .inline)
+        ))
+        
+        if let apiService = api {
+            serParas.append(.init(
+                domain: (relativeDomain != nil && apiService.domain != nil) ? "\(apiService.domain!).\(relativeDomain!).\(env.rootDomain)" : nil,
+                serviceType: .api,
+                hostname: apiService.hostname,
+                port: apiService.port,
+                dbServices: try getDbs(for: apiService.pgDatabasePorts, service: .api)
+            ))
         }
-        if let httpsSer = https {
-            serParas.append(
-                WebService.C.Paras(
-                    domain: (relativeDomain != nil && httpsSer.domain != nil) ? "\(httpsSer.domain!).\(relativeDomain!).\(env.rootDomain)" : nil,
-                    serviceType: .https,
-                    port: httpsSer.port,
-                    dbPorts: httpsSer.pgDatabasePorts,
-                    dbNames: try getDbNames(for: httpsSer.pgDatabasePorts)
-                )
-            )
+        if let httpsService = https {
+            serParas.append(.init(
+                domain: (relativeDomain != nil && httpsService.domain != nil) ? "\(httpsService.domain!).\(relativeDomain!).\(env.rootDomain)" : nil,
+                serviceType: .https,
+                hostname: httpsService.hostname,
+                port: httpsService.port,
+                dbServices: try getDbs(for: httpsService.pgDatabasePorts, service: .https)
+            ))
         }
         try WebService.Action.create(module: module, name: name, serviceParas: serParas, bundle: resolvePath(basePath: filePath, append: path), env: env, depends: depends)
 
-        func getDbNames(for ports: [Int]) throws -> [String] {
-            var res: [String] = []
+        func getDbs(for ports: [Int], service: WebService.ServiceType) throws -> [WebService.C.Paras.DBService] {
+            var res: [WebService.C.Paras.DBService] = []
             for p in ports {
-                guard let name = (pgSqls.first { $0.port == p }?.database) else { throw "数据库端口\(p)未找到对应的数据库名称" }
-                res.append(name)
+                guard let names = (pgSqls.first { $0.port == p }?.databases) else { throw "数据库端口\(p)未找到对应的数据库名称" }
+                res.append(.init(name: "\(service.rawValue.lowercased())_\(p)", port: p, dbs: names))
             }
             return res
         }

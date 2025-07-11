@@ -88,8 +88,13 @@ extension PgDatabase {
             static func create(module: String, port: Int, database: String, env: Env, basePort: Int) throws {
                 let key = try checkService(module: module, port: port, env: env, basePort: basePort)
                 let p = basePort + port
+                
+                let fileStorageKeyPath = "\(module)/\(port)/file_storage/\(database)"
+                
                 guard try Sh.PG.Db.isExist(port: p, database: database, key: key, env: env) == false else { throw Err.dbAlreadyExist.d("\(module)/\(p)[\(basePort) + \(port)]/\(database)") }
+                
                 do {
+                    try Sh.Vault.newKey(in: fileStorageKeyPath, env: env)
                     try Sh.PG.Db.create(module: module, port: port, basePort: basePort, db: database, key: key, env: env)
                 } catch let err {
                     print("任务失败，正在回退".err)
@@ -104,6 +109,7 @@ extension PgDatabase {
                 guard try Sh.PG.Db.isExist(port: p, database: database, key: key, env: env) == true else { throw Err.dbNotExist.d("\(module)/\(p)[\(basePort) + \(port)]/\(database)") }
                 try Sh.PG.Db.delete(port: p, db: database, key: key, env: env)
                 try Sh.Vault.deleteKey(in: "\(module)/\(port)/tde/\(database)_1", env: env)
+                try Sh.Vault.deleteKey(in: "\(module)/\(port)/file_storage/\(database)", env: env)
             }
 
             static func initIfNeeded(module: String, port: Int, database: String, env: Env, basePort: Int) throws {

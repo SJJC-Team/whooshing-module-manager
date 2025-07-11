@@ -42,6 +42,9 @@ struct WebService: LCDS {
         @Option(name: .shortAndLong, help: "HTTP 服务模块的相对域名") var httpsDomain: String?
         @Option(name: .shortAndLong, help: "API 服务模块的相对域名") var apiDomain: String?
 
+        @Option(name: .shortAndLong, help: "HTTP 服务模块的绑定主机名") var httpsHostname: String?
+        @Option(name: .shortAndLong, help: "API 服务模块的绑定主机名") var apiHostname: String?
+        
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "API 服务连接的数据库端口号列表") var apiDbPorts: [Int]
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "INLINE 服务连接的数据库端口号列表") var inlineDbPorts: [Int]
         @Option(name: .shortAndLong, parsing: .upToNextOption, help: "HTTPS 服务连接的数据库端口号列表") var httpsDbPorts: [Int]
@@ -53,31 +56,63 @@ struct WebService: LCDS {
         struct Paras {
             let domain: String?
             let serviceType: ServiceType
+            let hostname: String
             let port: Int
-            let dbPorts: [Int]
-            let dbNames: [String]
+            let dbServices: [DBService]
+
+            struct DBService {
+                let name: String
+                let port: Int
+                let dbs: [String]
+            }
         }
         
         var paras: [String] { [bundle] }
         func one(para name: String, i: Int, env: Env, depends: Depends) throws {
             let paras: [Paras] = ([.api: apiPort, .inline: inlinePort, .https: httpsPort].compactMapValues { $0 } as [ServiceType: Int]).map { type, port in
                 let domain: String?
-                let ports: [Int]
-                let names: [String]
+                let hostname: String
+                var dbServices: [Paras.DBService] = []
                 switch type {
-                    case .api: domain = apiDomain; ports = apiDbPorts; names = apiDbNames
-                    case .inline: domain = nil; ports = inlineDbPorts; names = inlineDbNames
-                    case .https: domain = httpsDomain; ports = httpsDbPorts; names = httpsDbNames
+                case .api:
+                    domain = apiDomain
+                    hostname = apiHostname ?? "localhost"
+                    
+                    for (i, dbPort) in apiDbPorts.enumerated() {
+                        dbServices.append(.init(name: "api_\(dbPort)", port: dbPort, dbs: [apiDbNames[i]]))
+                    }
+                case .inline:
+                    domain = nil
+                    hostname = "localhost"
+                    
+                    for (i, dbPort) in inlineDbPorts.enumerated() {
+                        dbServices.append(.init(name: "inline_\(dbPort)", port: dbPort, dbs: [inlineDbNames[i]]))
+                    }
+                case .https:
+                    domain = httpsDomain
+                    hostname = httpsHostname ?? "localhost"
+                    
+                    for (i, dbPort) in httpsDbPorts.enumerated() {
+                        dbServices.append(.init(name: "https_\(dbPort)", port: dbPort, dbs: [httpsDbNames[i]]))
+                    }
                 }
-                return .init(domain: domain, serviceType: type, port: port, dbPorts: ports, dbNames: names)
+                return .init(
+                    domain: domain,
+                    serviceType: type,
+                    hostname: hostname,
+                    port: port,
+                    dbServices: dbServices
+                )
             }
+            
             try Action.create(
                 module: module,
                 name: name,
                 serviceParas: paras,
                 bundle: bundle,
                 env: env,
-                depends: depends)
+                depends: depends
+            )
         }
     }
     
@@ -300,6 +335,7 @@ extension WebService {
                 for (k, v) in paras { 
                     if k.contains("PORT") { let dp = Int(v)!; paras[k] = String(module.startPort + dp) }
                     else if k.contains("PASSWORD") { paras[k] = try Sh.Vault.getKey(in: v, env: env) }
+                    else if k.contains("FILE_STORAGE_KEY") { paras[k] = try Sh.Vault.getKey(in: v, env: env) }
                 }
                 for envName in [
                     "WHOOSHING_API_SERVICE_MANAGER_URL",
@@ -310,6 +346,14 @@ extension WebService {
                 }
                 paras["WHOOSHING_INLINE_SERVICE_PRIVATE_SERVICE_ID"] = module.serviceId.uuidString.lowercased()
                 paras["WHOOSHING_API_SERVICE_PRIVATE_AUTHENTICATION_URL"] = "http://localhost:20020"
+                
+                for service in [ServiceType.https, .api, .inline] {
+                    paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_FILE_STORAGE_DIR"] = env.fileStorageRootDir
+                    paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_FILE_STORAGE_UNIX_PERMISSION_OWNER_ID"] = String(env.fileStorageOwnerId)
+                    paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_FILE_STORAGE_UNIX_PERMISSION_GROUP_ID"] = String(env.fileStorageGroupId)
+                    paras["WHOOSHING_\(service.rawValue.uppercased())_SERVICE_FILE_STORAGE_UNIX_PERMISSION_RWX"] = String(env.fileStorageRWX)
+                }
+                
                 return paras
             }
 
@@ -327,16 +371,28 @@ extension WebService {
                     guard try !Sh.isServing(port: p) else { throw Err.portOccupied.d("\(p)[\(dbModule.startPort) + \(serPara.port)]") }
                     
                     let envPrefix = "WHOOSHING_\(serPara.serviceType.rawValue.uppercased())_SERVICE"
-                    envParas[envPrefix + "_DB_COUNT"] = String(serPara.dbPorts.count)
+                    envParas[envPrefix + "_DB_COUNT"] = String(serPara.dbServices.count)
                     envParas[envPrefix + "_NAME"] = "\(serPara.serviceType)Service-\(serPara.port)"
                     envParas[envPrefix + "_PORT"] = String(serPara.port)
-                    for (i, dp) in serPara.dbPorts.enumerated() {
-                        let dbp = dbModule.startPort + dp
-                        guard try Sh.isServing(port: dbp) == true else { throw Err.pgServiceNotRunning.d(String(dbp)) }
-                        envParas["\(envPrefix)_DB_\(i + 1)_NAME"] = serPara.dbNames[i]
-                        envParas["\(envPrefix)_DB_\(i + 1)_PORT"] = String(dp)
-                        envParas["\(envPrefix)_DB_\(i + 1)_USER"] = "woo"
-                        envParas["\(envPrefix)_DB_\(i + 1)_PASSWORD"] = "\(module)/\(dp)/role/woo"
+                    envParas[envPrefix + "_HOSTNAME"] = serPara.hostname
+                    
+                    for (i, dbService) in serPara.dbServices.enumerated() {
+                        
+                        let dbServicePort = dbModule.startPort + dbService.port
+                        guard try Sh.isServing(port: dbServicePort) == true else { throw Err.pgServiceNotRunning.d(String(dbServicePort)) }
+                        
+                        envParas["\(envPrefix)_DB_\(i + 1)_NAME"] = dbService.name
+                        envParas["\(envPrefix)_DB_\(i + 1)_PORT"] = String(dbService.port)
+                        envParas["\(envPrefix)_DB_\(i + 1)_DBS_COUNT"] = String(dbService.dbs.count)
+                        
+                        for (j, db) in dbService.dbs.enumerated() {
+                            
+                            envParas["\(envPrefix)_DB_\(i + 1)_DB_\(j + 1)_NAME"] = db
+                            envParas["\(envPrefix)_DB_\(i + 1)_DB_\(j + 1)_USER"] = "woo"
+                            envParas["\(envPrefix)_DB_\(i + 1)_DB_\(j + 1)_PASSWORD"] = "\(module)/\(dbService.port)/role/woo"
+                            envParas["\(envPrefix)_DB_\(i + 1)_DB_\(j + 1)_FILE_STORAGE_KEY"] = "\(module)/\(dbService.port)/file_storage/\(db)"
+
+                        }
                     }
                 }
                 do {

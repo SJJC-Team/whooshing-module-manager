@@ -39,6 +39,10 @@ struct Env {
     let cfZoneId: String
     let nginxDir: String
     let rootDomain: String
+    let fileStorageRootDir: String
+    let fileStorageOwnerId: UInt
+    let fileStorageGroupId: UInt
+    let fileStorageRWX: UInt16
 
     var envs: [String: String] {
         [
@@ -50,7 +54,11 @@ struct Env {
             "CF_Account_ID": cfAccountId,
             "CF_Zone_ID": cfZoneId,
             "WHOOSHING_NGINX_DIR": nginxDir,
-            "WHOOSHING_ROOT_DOMAIN": rootDomain
+            "WHOOSHING_ROOT_DOMAIN": rootDomain,
+            "WHOOSHING_FILESTORAGE_ROOT_DIR": fileStorageRootDir,
+            "WHOOSHING_FILESTORAGE_OWNER_ID": String(fileStorageOwnerId),
+            "WHOOSHING_FILESTORAGE_GROUP_ID": String(fileStorageGroupId),
+            "WHOOSHING_FILESTORAGE_RWX": String(fileStorageRWX)
         ]
     }
 
@@ -64,7 +72,11 @@ struct Env {
             let cfAccountId = ProcessInfo.processInfo.environment["CF_Account_ID"],
             let cfZoneId = ProcessInfo.processInfo.environment["CF_Zone_ID"],
             let nginxDir = ProcessInfo.processInfo.environment["WHOOSHING_NGINX_DIR"],
-            let rootDomain = ProcessInfo.processInfo.environment["WHOOSHING_ROOT_DOMAIN"]
+            let rootDomain = ProcessInfo.processInfo.environment["WHOOSHING_ROOT_DOMAIN"],
+            let fileStorageRootDir = ProcessInfo.processInfo.environment["WHOOSHING_FILESTORAGE_ROOT_DIR"],
+            let fsod = ProcessInfo.processInfo.environment["WHOOSHING_FILESTORAGE_OWNER_ID"], let fileStorageOwnerId = UInt(fsod),
+            let fsgd = ProcessInfo.processInfo.environment["WHOOSHING_FILESTORAGE_GROUP_ID"], let fileStorageGroupId = UInt(fsgd),
+            let fsRWX = ProcessInfo.processInfo.environment["WHOOSHING_FILESTORAGE_RWX"], let fileStorageRWX = UInt16(fsRWX)
         else { throw Err.envErr }
         
         self.dataDir = dataDir
@@ -75,5 +87,9 @@ struct Env {
         self.cfZoneId = cfZoneId
         self.nginxDir = nginxDir
         self.rootDomain = rootDomain
+        self.fileStorageRootDir = fileStorageRootDir
+        self.fileStorageOwnerId = fileStorageOwnerId
+        self.fileStorageGroupId = fileStorageGroupId
+        self.fileStorageRWX = fileStorageRWX
     }
 }
