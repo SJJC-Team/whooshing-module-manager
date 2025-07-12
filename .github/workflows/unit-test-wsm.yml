@@ -16,7 +16,6 @@ jobs:
       with_musl: false
       with_api_check: false
       only_build: true
-      with_pg_test: false
       work_dir: "wsm-ctl"
     secrets: inherit
 
@@ -27,6 +26,5 @@ jobs:
       with_musl: false
       with_api_check: false
       only_build: true
-      with_pg_test: false
       work_dir: "manager"
     secrets: inherit

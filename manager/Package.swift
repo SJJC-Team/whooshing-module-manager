@@ -16,7 +16,7 @@ enum WhooshingModuleType: String {
 let package = Package(
     name: "manager",
     platforms: [
-        .macOS(.v10_15),
+        .macOS(.v11),
         .iOS(.v13),
         .tvOS(.v13),
         .watchOS(.v6)
@@ -30,10 +30,14 @@ let package = Package(
         .package(url: "https://github.com/SJJC-Team/whooshing-fluent.git", from: "1.0.0"),
         // 🐘 对 PostgreSQL 的 Fluent 驱动器
         .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.8.0"),
+
         .package(url: "https://github.com/apple/swift-nio-extras.git", from: "1.0.0"),
-        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", .upToNextMajor(from: "1.3.7")),
-        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-pgsql.git", .upToNextMajor(from: "1.0.2")),
-        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-server.git", .upToNextMajor(from: "1.1.1"))
+
+        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-basic.git", .upToNextMajor(from: "1.4.4")),
+
+        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-pgsql.git", .upToNextMajor(from: "1.0.5")),
+        
+        .package(url: "https://github.com/SJJC-Team/whooshing.toolbox-server.git", .upToNextMajor(from: "1.1.7"))
     ],
     targets: [
         .executableTarget(

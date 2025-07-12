@@ -75,8 +75,16 @@ extension Yaml {
         var pgsql: [PGSQL] = []
         var sharedInline: INLINE = .init()
         var serviceBundles: [SERVICE_BUNDLE] = []
-        static let paras: [String: Types] = [ "#domain": .string, "pgsql": .dataTemplateList(PGSQL.self), "shared_inline_module": .dataTemplate(INLINE.self), "service_bundles": .dataTemplateList(SERVICE_BUNDLE.self)]
+        
+        static let paras: [String: Types] = [
+            "#domain": .string,
+            "pgsql": .dataTemplateList(PGSQL.self),
+            "shared_inline_module": .dataTemplate(INLINE.self),
+            "service_bundles": .dataTemplateList(SERVICE_BUNDLE.self)
+        ]
+        
         init() {}
+        
         init(data: [String: Any], name: String) {
             self.name = name
             self.domain = data["domain"] as? String
@@ -88,24 +96,36 @@ extension Yaml {
 
     struct PGSQL: DataTemplate {
         var name: String = ""
-        var database: String = ""
+        var databases: [String] = []
         var port: Int = 0
-        static let paras: [String: Types] = [ "database": .string, "port": .int ]
+        
+        static let paras: [String: Types] = [
+            "databases": .stringArr,
+            "port": .int
+        ]
+        
         init() {}
+        
         init(data: [String: Any], name: String) {
             self.name = name
-            self.database = data["database"] as! String
+            self.databases = data["databases"] as! [String]
             self.port = data["port"] as! Int
         }
     }
     
     struct INLINE: DataTemplate {
-        var pgDatabasePorts: [Int] = []
+        var pgPorts: [Int] = []
         var port: Int = 0
-        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int ]
+        
+        static let paras: [String: Types] = [
+            "pg_database_ports": .intArr,
+            "port": .int
+        ]
+        
         init() {}
+        
         init(data: [String : Any], name: String) {
-            self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
+            self.pgPorts = data["pg_database_ports"] as! [Int]
             self.port = data["port"] as! Int
         }
     }
@@ -115,8 +135,15 @@ extension Yaml {
         var api: API? = nil
         var https: HTTPS? = nil
         var path: String = ""
-        static let paras: [String : Types] = [ "#api": .dataTemplate(API.self), "#https": .dataTemplate(HTTPS.self), "path": .string ]
+        
+        static let paras: [String : Types] = [
+            "#api": .dataTemplate(API.self),
+            "#https": .dataTemplate(HTTPS.self),
+            "path": .string
+        
+        ]
         init() {}
+        
         init(data: [String : Any], name: String) {
             self.name = name
             self.api = data["api"] as? API
@@ -126,28 +153,48 @@ extension Yaml {
     }
 
     struct API: DataTemplate {
-        var pgDatabasePorts: [Int] = []
+        var pgPorts: [Int] = []
         var port: Int = 0
         var domain: String? = nil
-        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string ]
+        var hostname: String = "localhost"
+        
+        static let paras: [String: Types] = [
+            "pg_database_ports": .intArr,
+            "port": .int,
+            "#domain": .string,
+            "#hostname": .string
+        ]
+        
         init() {}
+        
         init(data: [String: Any], name: String) {
-            self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
+            self.pgPorts = data["pg_database_ports"] as! [Int]
             self.port = data["port"] as! Int
             self.domain = data["domain"] as? String
+            self.hostname = data["hostname"] as? String ?? "localhost"
         }
     }
 
     struct HTTPS: DataTemplate {
-        var pgDatabasePorts: [Int] = []
+        var pgPorts: [Int] = []
         var port: Int = 0
         var domain: String? = nil
-        static let paras: [String: Types] = [ "pgDatabasePorts": .intArr, "port": .int, "#domain": .string]
+        var hostname: String = "localhost"
+        
+        static let paras: [String: Types] = [
+            "pg_database_ports": .intArr,
+            "port": .int,
+            "#domain": .string,
+            "#hostname": .string
+        ]
+        
         init() {}
+        
         init(data: [String: Any], name: String) {
-            self.pgDatabasePorts = data["pgDatabasePorts"] as! [Int]
+            self.pgPorts = data["pg_database_ports"] as! [Int]
             self.port = data["port"] as! Int
             self.domain = data["domain"] as? String
+            self.hostname = data["hostname"] as? String ?? "localhost"
         }
     }
 
