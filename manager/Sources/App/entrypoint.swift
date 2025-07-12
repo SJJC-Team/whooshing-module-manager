@@ -168,6 +168,9 @@ extension Woo {
     }()
     
     static func main() async throws {
-        try await https.executeWithAsyncShutdown().get()
+        let domainForward = DomainForward()
+        
+        async let _ = https.executeWithAsyncShutdown().get()
+        async let _ = domainForward.domainForwardExecute(app: Woo.https.app)
     }
 }
