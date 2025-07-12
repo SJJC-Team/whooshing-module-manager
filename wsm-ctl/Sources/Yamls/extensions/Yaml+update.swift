@@ -59,20 +59,6 @@ extension Yaml.SERVICE_BUNDLE {
             depends: depends
         )
     }
-
-    /// 拼接路径的实用函数
-    private func resolvePath(basePath: String, append pathToAppend: String) -> String {
-        let base = (basePath as NSString).expandingTildeInPath
-        let baseURL = URL(fileURLWithPath: base).deletingLastPathComponent()
-        let appended = (pathToAppend as NSString).expandingTildeInPath
-        let finalURL: URL
-        if appended.hasPrefix("/") {
-            finalURL = URL(fileURLWithPath: appended)
-        } else {
-            finalURL = baseURL.appendingPathComponent(appended)
-        }
-        return finalURL.standardized.path
-    }
 }
 
 fileprivate func fireAndForget(action: () throws -> ()) {

@@ -81,7 +81,7 @@ extension Yaml.SERVICE_BUNDLE {
     /// 拼接路径的实用函数
     private func resolvePath(basePath: String, append pathToAppend: String) -> String {
         let base = (basePath as NSString).expandingTildeInPath
-        let baseURL = URL(fileURLWithPath: base).deletingLastPathComponent()
+        let baseURL = URL(fileURLWithPath: base)
         let appended = (pathToAppend as NSString).expandingTildeInPath
         let finalURL: URL
         if appended.hasPrefix("/") {
