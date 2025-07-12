@@ -19,14 +19,14 @@ struct Manager: RouteCollection {
         // 生成一对密钥对，作为自己的公私密钥对以与对方进行密钥协商
         let keyPair = Crypto.Asym.makeCryptoKeyPair()
         // 使用对方的公钥和自己的私钥生成共享密钥
-        let sharedKey = try Crypto.Asym.keyEncapsulate(key: keyPair.private, partyPublic: pubKey, salt: Crypto.hash("manager.shared.key"), info: "")
+        let sharedKey = try Crypto.Asym.keyEncapsulate(key: keyPair.private, partyPublic: pubKey, salt: Crypto.hash("manager.shared.key").get(), info: "").get()
         // 查询数据库中的模块信息
         let modules = try await Module.query(on: req.db).all()
         let ms = try modules.map { try $0.dto(req: req) }
         // 使用共享密钥对服务根密钥进行加密
-        let cipherRoot = try Crypto.Symm.encrypt(Self.root, key: sharedKey)
+        let cipherRoot = try Crypto.Symm.encrypt(Self.root, key: sharedKey).get()
         // 使用共享密钥对服务模块密钥进行加密
-        let cipherModules = try ms.map { try Crypto.Symm.encrypt($0, key: sharedKey) }
+        let cipherModules = try ms.map { try Crypto.Symm.encrypt($0, key: sharedKey).get() }
         // 返回明文的自己的公钥，以及加密后的服务根密钥和服务模块密钥
         return InitParaRes(pub: keyPair.public, root: cipherRoot, modules: cipherModules)
     }

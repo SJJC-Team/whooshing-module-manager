@@ -35,10 +35,10 @@ struct DatabaseDepends {
             let envPrefix = "WHOOSHING_HTTPS_SERVICE"
             let key = try Sh.Vault.getKey(in: "\(moduleName)/\(port)/role/woo", env: env)
             let envParas: [String: String] = [
-                envPrefix + "_DB_COUNT": "1",
                 envPrefix + "_NAME": "Manager",
                 envPrefix + "_PORT": String(basePort),
                 envPrefix + "_HOSTNAME": "localhost",
+                envPrefix + "_DB_COUNT": "1",
                 envPrefix + "_DB_1_NAME": database,
                 envPrefix + "_DB_1_PORT": String(basePort + port),
                 envPrefix + "_DB_1_DBS_COUNT": "1",

@@ -2,12 +2,12 @@ import PgSQL
 import Foundation
 import Vapor
 import DataConvertable
+import WhooshingServer
 
 final class Module: PGModel, @unchecked Sendable  {
     static let name: String = "modules"
 
     struct Fields: PGFields {
-        static var tdeEncrypt: Bool { !Woo.isIndependentDebug }
         let id = PGField("id", .uuid)
         let name = PGField("name", .string).cons([.required])
         let serviceId = PGField("service_id", .uuid).cons([.required])
@@ -39,29 +39,15 @@ final class Module: PGModel, @unchecked Sendable  {
 
     init() {}
 
-    struct DTO: Content, Sendable, ThrowableDataConvertable {
-        let name: String
-        let serviceId: UUID
-        let connection: String?
-        init(name: String, serviceId: UUID, connection: String?) { self.name = name; self.serviceId = serviceId; self.connection = connection }
-        init(data: Data) throws { 
-            let paras = try [String: AnyThrowableDataConvertable](data: data) 
-            self.name = try paras["name"]!.cast(to: String.self)
-            self.serviceId = try paras["serviceId"]!.cast(to: UUID.self)
-            self.connection = try? paras["connection"]?.cast(to: String.self)
-        }
-
-        func data() throws -> Data {
-            let d: [String: (any ThrowableDataConvertable)?] = [
-                "name": name,
-                "serviceId": serviceId,
-                "connection": connection
-            ]
-            return try d.filtered.anyValue.data()
-        }
-    }
+    typealias DTO = Inline.ModuleData
 
     @Sendable func dto(req: Request) throws -> DTO { DTO(name: self.name, serviceId: self.serviceId, connection: self.connection) }
 
-    struct MIG: PGMigration, Sendable { typealias DataModel = Module }
+    struct MIG: PGMigration, Sendable { 
+        typealias DataModel = Module 
+
+        var tdeEncrypt: Bool {
+            !Woo.isIndependentDebug
+        }    
+    }
 }

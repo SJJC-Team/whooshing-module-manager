@@ -11,7 +11,6 @@ import NIOExtras
 import NIOHTTP1
 
 enum DomainForwardErr: String, ErrList {
-    var domain: String { "woo.sys.manager.domain.forward.err" }
     case unknowError = "域名转发时发生未知错误"
     case clientChannelError = "客户端与该中转的连线出现错误"
     case forwardChannelError = "该中转与目标服务模块的连线出现错误"
@@ -48,7 +47,7 @@ class DomainForward: @unchecked Sendable {
             let channel = try await bootstrap.bind(host: "0.0.0.0", port: 20002).get()
             app.logger.notice("域名转发服务开始监听 \(channel.localAddrInfo)")
         } catch {
-            app.logger.report(error: DomainForwardErr.unknowError.d(13053).subErr(error))
+            app.logger.report(error: DomainForwardErr.unknowError.d().subErr(error))
             throw error
         }
     }
@@ -157,7 +156,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             logger.debug("DomainForward-收到客户端第一次请求: \(context.channel.serverAddrInfo)")
             let request = String(buffer: data)
             guard let hostStr = request.split(separator: "\r\n").first(where: { $0.lowercased().hasPrefix("host") })?.lowercased() else {
-                let err = DomainForwardErr.protocolError.d("未能找到 Host", 13061)
+                let err = DomainForwardErr.protocolError.d("未能找到 Host")
                 self.errorHappend(channel: context.channel, error: err, status: .badRequest, clientErr: true)
                 return
             }
@@ -165,7 +164,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
             let hostArr = hostStr.components(separatedBy: ": ")
             
             guard hostArr.count == 2 else {
-                let err = DomainForwardErr.protocolError.d("Host 字段不符合 HTTP 规范", 13062)
+                let err = DomainForwardErr.protocolError.d("Host 字段不符合 HTTP 规范")
                 self.errorHappend(channel: context.channel, error: err, status: .badRequest, clientErr: true)
                 return
             }
@@ -174,7 +173,7 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
 
             let clientDomain = try await Domain.query(on: self.db).filter(\.$domain == domain).first().get()
             guard let dom = clientDomain else {
-                throw DomainForwardErr.domainNotExist.d("客户端所请求的域名: \(domain)", 13060)
+                throw DomainForwardErr.domainNotExist.d("客户端所请求的域名: \(domain)")
             }
 
             let channel = try await self.forwardToService(port: dom.port, clientChannel: context.channel)
@@ -223,9 +222,9 @@ final class ServerChannelHandler: ChannelInboundHandler, @unchecked Sendable {
         let err: Error
 
         if clientErr {
-            err = DomainForwardErr.clientChannelError.d(13055).subErr(error)
+            err = DomainForwardErr.clientChannelError.d().subErr(error)
         } else {
-            err = DomainForwardErr.forwardChannelError.d(13065).subErr(error)
+            err = DomainForwardErr.forwardChannelError.d().subErr(error)
         }
 
         logger.report(error: err)
