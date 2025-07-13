@@ -8,9 +8,9 @@ extension DBModel {
         static let name: String = "domains"
 
         struct Fields: PGFields {
-            let id = PGField("id", .uuid)
-            let domain = PGField("domain", .string, true).cons([.required])
-            let port = PGField("port", .int, true).cons([.required])
+            let id = PGField("id", .uuid)                       .primary
+            let domain = PGField("domain", .string)             .required.unique
+            let port = PGField("port", .int)                    .required.unique
             let createdAt = PGField("create_at", .string)
             let updateAt = PGField("update_at", .string)
         }

@@ -93,8 +93,9 @@ extension PgDatabase {
                 
                 guard try Sh.PG.Db.isExist(port: p, database: database, key: key, env: env) == false else { throw Err.dbAlreadyExist.d("\(module)/\(p)[\(basePort) + \(port)]/\(database)") }
                 
+                try Sh.Vault.newKey(in: fileStorageKeyPath, env: env)
+                
                 do {
-                    try Sh.Vault.newKey(in: fileStorageKeyPath, env: env)
                     try Sh.PG.Db.create(module: module, port: port, basePort: basePort, db: database, key: key, env: env)
                 } catch let err {
                     print("任务失败，正在回退".err)

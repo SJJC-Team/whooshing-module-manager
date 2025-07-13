@@ -8,12 +8,12 @@ enum DBModel {
         static let name: String = "modules"
 
         struct Fields: PGFields {
-            let id = PGField("id", .uuid)
-            let name = PGField("name", .string).cons([.required])
-            let serviceId = PGField("service_id", .uuid).cons([.required])
+            let id = PGField("id", .uuid)                           .primary
+            let name = PGField("name", .string)                     .required
+            let serviceId = PGField("service_id", .uuid)            .required
             let connection = PGField("connection", .string)
-            let startPort = PGField("start_port", .int, true).cons([.required])
-            let portSpace = PGField("port_space", .int).def(20).cons([.required])
+            let startPort = PGField("start_port", .int)             .required.unique
+            let portSpace = PGField("port_space", .int)             .required.def(20)
             let createdAt = PGField("create_at", .string)
             let updateAt = PGField("update_at", .string)
         }
